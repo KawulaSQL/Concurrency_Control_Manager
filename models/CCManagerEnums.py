@@ -15,3 +15,10 @@ class OperationType(Enum):
 class OperationStatus(Enum):
     E = "Executed"
     NE = "Not Executed"
+class TransactionStatus(Enum):
+    ACTIVE = "Active"
+    PARTIALCOMMITTED = "Partially Committed"
+    COMMITTED = "Committed"
+    FAILED = "Failed"
+    ABORTED = "Aborted"
+    TERMINATED = "Terminated"

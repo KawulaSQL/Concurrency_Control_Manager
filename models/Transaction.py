@@ -1,47 +1,69 @@
 from models.Operation import Operation
 from models.Resource import Resource
+from models.CCManagerEnums import TransactionStatus
 from datetime import datetime
 class Transaction:
-    txID: str = None #id transaction
-    sharedLockList: list[str] = None #daftar shared lock
-    exclusiveLockList: list[str] = None #daftar exclusive lock
-
-    readSet:list[Resource] = None #daftar operasi read di transaction
-    writeSet:list[Resource] =None #daftar operasi write di transaction
-
+    txID: int = None #id transaction
+    txStatus: TransactionStatus = None #status transaction
+    operationList: list[Operation] = None #daftar operasi
+    sharedLockList: list[Resource] = None #daftar shared lock
+    exclusiveLockList: list[Resource] = None #daftar exclusive lock
     startTS:datetime = None #start Timestamp
     valTS:datetime = None #validation Timestamp
     finishTS:datetime = None #finish Timestamp
-    def __init__(self,txid: str, sl: list[str], xl : list[str]):
+    def __init__(self,txid: int, sl: list[Resource] = None, xl : list[Resource] = None, ol: list[Operation] = None):
         self.txID = txid
         self.exclusiveLockList = xl
         self.sharedLockList = sl
-        self.readSet = []
-        self.writeSet = []
         self.startTS = datetime.max
         self.finishTS = datetime.max
         self.valTS = datetime.max
-
-    def addToSet(self, operation: Operation): #tambahkan operation ke set
-        if operation.getOperationType() == "R":
-          self.addToReadSet(operation.getOperationResource())
-        elif operation.getOperationType() == "W":
-          self.addToWriteSet(operation.getOperationResource())
-
-    def addToWriteSet(self,resource:Resource): #masukkan resource write ke write set
-       if(resource not in self.writeSet):
-          self.writeSet.append(resource)
-
-    def addToReadSet(self,resource:Resource): #masukkan resource read ke read set
-       if(resource not in self.readSet):
-          self.readSet.append(resource)
-
-    def getReadSet(self): #get read set
-       return self.readSet
+        self.operationList = ol
+   #METHOD GETTER
+    def getTransactionID(self):
+       return self.txID
+    def getTransactionStatus(self):
+       return self.txStatus
+    def getOperationList(self):
+       return self.operationList
+    def getSharedLockList(self):
+       return self.sharedLockList
+    def getExclusiveLockList(self):
+       return self.exclusiveLockList
+    def getStartTS(self):
+       return self.startTS
+    def getFinishTS(self):
+       return self.finishTS
+    def getValidationTS(self):
+       return self.valTS
     
-    def getWriteSet(self): #get write set
-       return self.writeSet
-    
+    #METHOD SETTER
+    def setTransactionID(self,ID:int):
+       self.txID = ID
+    def setTransactionStatus(self, status:TransactionStatus):
+       self.txStatus = status
+    def setOperationList(self, ol: list[Operation] = None):
+       self.operationList = ol
+    def setSharedLockList(self, sl: list[Resource] = None):
+       self.sharedLockList = sl
+    def setExclusiveLockList(self, xl: list[Resource] = None):
+       self.exclusiveLockList = xl
+    def setStartTS(self,newTS:datetime):
+       self.startTS = newTS
+    def setFinishTS(self,newTS:datetime):
+       self.finishTS = newTS
+    def setValidationTS(self,newTS:datetime):
+       self.valTS = newTS
+
+    def addOperation(self,op:Operation): #tambah operation ke operation list
+       self.operationList.append(op)
+
+    def addSharedLock(self,sl:Resource): #tambah resource shared lockk ke list
+       self.sharedLockList.append(sl)
+
+    def addExclusiveLock(self,sl:Resource): #tambah resource exclusive lock ke list
+       self.exclusiveLockList.append(sl)
+   
     def markStartTS(self): #update start timestamp
        self.startTS = datetime.now()
 
