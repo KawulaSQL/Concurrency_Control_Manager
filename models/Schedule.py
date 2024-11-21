@@ -5,12 +5,16 @@ from models.Transaction import Transaction
 class Schedule:
     transactionList: list[Transaction] #daftar transaksi
     resourceList: list[Resource] #daftar resource
-    operationList: list[Operation] #daftar operasi
+    operationQueue: list[Operation] #daftar antrean dari operasi
+    operationSequence: list[Operation]
 
-    def __init__(self, operationList: list, dataItemList: list, transactionList: list):
+    def __init__(self, operationList: list, resourceList: list, transactionList: list):
         self.operationList = operationList
-        self.dataItemList = dataItemList
+        self.resourceList = resourceList
         self.transactionList = transactionList
 
     def dequeue(self) -> Operation:
         return self.operationList.pop(0)
+    
+    def enqueue(self, op: Operation):
+        self.operationQueue.append(op)
