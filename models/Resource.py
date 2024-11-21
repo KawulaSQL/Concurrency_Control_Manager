@@ -10,6 +10,7 @@ class Resource:
         self.__data = data
         self.__rts = rts
         self.__wts = wts
+        self.versions = [] #versi dari resource
 
     def getData(self): #method untuk mendapatkan nilai data dari resource
         return self.__data
@@ -28,3 +29,11 @@ class Resource:
 
     def setWTS(self,wts:datetime): #set write timestamp
         self.__wts=wts
+
+    def add_version(self, value: str, wts: datetime):
+        """Tambahkan versi baru ke resource."""
+        self.versions.append({
+            "value": value,
+            "wts": wts,
+            "rts": datetime.min  # RTS diinisialisasi ke datetime.min
+        })
