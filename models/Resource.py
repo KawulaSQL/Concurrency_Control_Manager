@@ -8,13 +8,16 @@ class Resource:
     __wts:datetime = None # write timestamp
     versions:list[int] = None #versi dari resource (MVCC)
     __lockHolderList:list[{Transaction,LockType}] = None #daftar pemegang lock dan transactionnya
+    __data:str = None #data
     def __init__(self, name:str, rts:datetime, wts:datetime): #konstruktor untuk resource
         self.__rts = rts
         self.__wts = wts
         self.__name=name
         self.versions = []
         self.__lockHolderList = []
-    #METHOD GETTER
+
+    def getData(self): #method untuk mendapatkan nilai data dari resource
+        return self.__data
     def getRTS(self): #method untuk mendapatkan nilai read timestamp
         return self.__rts
     def getWTS(self): #method untuk mendapatkan nilai write timestamp
