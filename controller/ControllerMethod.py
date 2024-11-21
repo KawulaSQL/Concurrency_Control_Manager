@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
-from model.Resource import Resource
-from model.CCManagerEnums import Action
-from model.Response import Response
+from models.Resource import Resource
+from models.CCManagerEnums import Action
+from models.Response import Response
 
 
 class ControllerMethod(ABC):

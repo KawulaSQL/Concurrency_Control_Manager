@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from model.Operation import Operation
+from models.Operation import Operation
 
 @dataclass
 class Response:

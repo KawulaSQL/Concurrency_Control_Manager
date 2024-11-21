@@ -1,10 +1,10 @@
 from controller.TwoPhaseLocking import TwoPhaseLocking
 from controller.MVCC import MVCC
 from controller.ControllerMethod import ControllerMethod
-from model.Schedule import Schedule
-from model.Transaction import Transaction
-from model.Operation import Operation
-from model.Resource import Resource
+from models.Schedule import Schedule
+from models.Transaction import Transaction
+from models.Operation import Operation
+from models.Resource import Resource
 
 class ConcurrencyControlManager:
     """Manages concurrency control for transactions."""
