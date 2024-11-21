@@ -32,7 +32,7 @@ class Schedule:
         self.transactionList.append(tx)
     def addResource(self,res:Resource):
         self.resourceList.append(res)
-    def enqueueOperation(self,op:Operation):
+    def enqueue(self,op:Operation):
         self.operationQueue.append(op)
-    def dequeueOperation(self) -> Operation:
+    def dequeue(self) -> Operation:
         return self.operationList.pop(0)
