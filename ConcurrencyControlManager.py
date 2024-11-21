@@ -4,8 +4,6 @@ from controller.ControllerMethod import ControllerMethod
 from model.Schedule import Schedule
 from model.Transaction import Transaction
 from model.Operation import Operation
-from model.Response import Response
-from model.Action import Action
 from model.Resource import Resource
 
 class ConcurrencyControlManager:
