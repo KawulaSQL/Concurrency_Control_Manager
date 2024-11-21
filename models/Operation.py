@@ -1,29 +1,23 @@
 from models.Resource import *
-
+from models.CCManagerEnums import OperationType,OperationStatus
 #kelas untuk menentukan jenis operasi yang ada di dalam suatu transaction
 class Operation:
     '''
         CATATAN:
-        DAFTAR TIPE OPERASI YANG VALID:
-        R = READ
-        W = WRITE
-        C = COMMIT
-        A = ABORT
-        SL = SHARED LOCK
-        XL = EXCLUSIVE LOCK
-        UL = UNLOCK
+        TIPE OPERASI DAN STATUS OPERASI YANG VALID LIHAT DI SOURCE CODE models/CCManagerEnums
     '''
-    __opType:str #tipe operasi
-
+    __opType:OperationType #tipe operasi
+    __opStatus:OperationStatus #status dari operasi
     __opTx:str #transaksi dari operasi
     __opResource:Resource #resource dari operasi
 
-    def __init__(self, typeOp:str, tx:str, res:Resource): #konstruktor Operation
+    def __init__(self, typeOp:OperationType, tx:str, res:Resource): #konstruktor Operation
         self.__opType=typeOp
         self.__opTx=tx
         self.__opResource=res
+        self.__opStatus = OperationStatus.NE
 
-    def getOperationType(self): #dapatkan operation type
+    def getOperationType(self): #dapatkan tipe operasi
         return self.__opType
     
     def getOperationTransaction(self): #dapatkan transaksi dari operasi
@@ -32,12 +26,18 @@ class Operation:
     def getOperationResource(self): #dapatkan resource dari operasi
         return self.__opResource
     
-    def setOperationType(self,typeOp:str):
+    def getOperationStatus(self): #dapatkan status dari operasi
+        return self.__opStatus
+    
+    def setOperationType(self,typeOp:OperationType): #set tipe operasi
         self.__opType = typeOp
 
-    def setOperationTransaction(self,tx:str):
+    def setOperationTransaction(self,tx:str): #set transaction operasi
         self.__opTx = tx
     
-    def setOperationResource(self,res:Resource):
+    def setOperationResource(self,res:Resource): #set resource dari operasi
         self.__opResource = res
+
+    def setOperationStatus(self,status:OperationStatus): #set status dari operasi
+        self.__opStatus = status
     
