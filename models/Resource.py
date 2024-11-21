@@ -6,13 +6,13 @@ class Resource:
     __name:str = None #nama variabel dari resource
     __rts:datetime = None #read timestamp
     __wts:datetime = None # write timestamp
-    __version:int = None #versi dari resource (MVCC)
+    versions:list[int] = None #versi dari resource (MVCC)
     __lockHolderList:list[{Transaction,LockType}] = None #daftar pemegang lock dan transactionnya
-    def __init__(self, name:str, rts:datetime, wts:datetime,version:int): #konstruktor untuk resource
+    def __init__(self, name:str, rts:datetime, wts:datetime): #konstruktor untuk resource
         self.__rts = rts
         self.__wts = wts
         self.__name=name
-        self.__version = version
+        self.versions = []
         self.__lockHolderList = []
     #METHOD GETTER
     def getRTS(self): #method untuk mendapatkan nilai read timestamp
@@ -58,3 +58,10 @@ class Resource:
                 lock for lock in self.__lockHolderList 
                 if lock['Transaction'] != transaction
             ]
+    def add_version(self, value: str, wts: datetime):
+        """Tambahkan versi baru ke resource."""
+        self.versions.append({
+            "value": value,
+            "wts": wts,
+            "rts": datetime.min  # RTS diinisialisasi ke datetime.min
+        })
