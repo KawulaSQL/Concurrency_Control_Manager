@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from model.Resource import Resource
-from model.Action import Action
+from model.CCManagerEnums import Action
 from model.Response import Response
 
 
