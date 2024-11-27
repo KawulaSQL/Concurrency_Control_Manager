@@ -1,6 +1,10 @@
 from collections import defaultdict
-
-class TwoPhaseLocking:
+from abc import ABC
+from models.Resource import Resource
+from models.CCManagerEnums import Action
+from models.Response import Response
+from ControllerMethod import ControllerMethod
+class TwoPhaseLocking(ControllerMethod, ABC):
     def __init__(self, input_sequence: str):
         self.sequence = []
         self.timestamp = []
@@ -33,6 +37,23 @@ class TwoPhaseLocking:
         except ValueError as e:
             raise ValueError(f"Invalid input sequence: {e}")
 
+    def log_object(self, resource: Resource, transaction_id: int): #rough implementation
+        self.transaction_history.append({
+            "transaction": transaction_id,
+            "table": resource.name,
+            "operation": "LOG",
+            "status": "Logged"
+        })
+    def validate_object(self, resource: Resource, transaction_id: int, action: Action) -> Response: #rough implementation
+        if action == Action.READ:
+            success = self.shared_lock(transaction_id, resource.name)
+        elif action == Action.WRITE:
+            success = self.exclusive_lock(transaction_id, resource.name)
+        else:
+            success = False
+        return Response(success=success, message="Validation successful" if success else "Validation failed")
+
+        
     def shared_lock(self, transaction: int, table: str) -> bool:
         """Acquire a shared lock."""
         if table in self.exclusive_lock_table:

@@ -12,7 +12,46 @@ class MVCC:
         self.result = []
         self.transaction_history = []
 
+    def log_object(self, resource: Resource, transaction_id: int): #rough implementation
+        """Logs a transaction's interaction with a resource."""
+        self.transaction_history.append({
+            "transaction": transaction_id,
+            "resource": resource.name,
+            "operation": "LOG",
+            "status": "Logged"
+        })
+
+    def validate_object(self, resource: Resource, transaction_id: int, action: Action) -> Response: #rough implementation
+        """Validates whether a transaction can perform a given action on a resource."""
+        transaction = self.transactions[transaction_id]
+        if action == Action.READ:
+            return self._validate_read(transaction, resource)
+        elif action == Action.WRITE:
+            return self._validate_write(transaction, resource)
+        return Response(success=False, message="Invalid action")
+
+    def _validate_read(self, transaction: Transaction, resource: Resource) -> Response: #rough implementation
+        if transaction.startTS == datetime.max:
+            transaction.markStartTS()
+
+        valid_versions = [v for v in resource.versions if v["wts"] <= transaction.startTS]
+        if not valid_versions:
+            return Response(success=False, message="Read validation failed: No valid version")
+
+        return Response(success=True, message="Read validation successful")
+
+    def _validate_write(self, transaction: Transaction, resource: Resource) -> Response: #rough implementation
+        if transaction.startTS == datetime.max:
+            transaction.markStartTS()
+
+        valid_versions = [v for v in resource.versions if v["wts"] <= transaction.startTS]
+        if valid_versions and transaction.startTS < max(v["rts"] for v in valid_versions):
+            return Response(success=False, message="Write validation failed: RTS conflict")
+
+        return Response(success=True, message="Write validation successful")
+
     def process_read(self, transaction: Transaction, resource: Resource):
+        
         if transaction.startTS == datetime.max:
             transaction.markStartTS()
 
