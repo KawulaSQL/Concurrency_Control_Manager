@@ -9,12 +9,20 @@ class Resource:
     versions:list[int] = None #versi dari resource (MVCC)
     __lockHolderList:list[{Transaction,LockType}] = None #daftar pemegang lock dan transactionnya
     __data:str = None #data
-    def __init__(self, name:str, rts:datetime, wts:datetime): #konstruktor untuk resource
-        self.__rts = rts
-        self.__wts = wts
-        self.__name=name
-        self.versions = []
-        self.__lockHolderList = []
+
+    def __init__(self, name: str, rts: datetime = None, wts: datetime = None):
+        """
+        Constructor for the Resource class.
+        
+        :param name: Name of the resource.
+        :param rts: Read timestamp (default is current time).
+        :param wts: Write timestamp (default is current time).
+        """
+        self.__name = name
+        self.__rts = rts if rts is not None else datetime.now() 
+        self.__wts = wts if wts is not None else datetime.now()  
+        self.versions = []  
+        self.__lockHolderList = []  
 
     def getData(self): #method untuk mendapatkan nilai data dari resource
         return self.__data

@@ -36,9 +36,10 @@ class ControllerMethod(ABC):
         pass
 
     @abstractmethod
-    def run(self):
+    def process_query(self, query: Operation) -> Response:
         """
         Execute the concurrency control mechanism's logic (e.g., validate locks, resolve conflicts).
+        Implement this function, call the log_object and validate_object method that may be needed
         """
         pass
 

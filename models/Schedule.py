@@ -4,15 +4,27 @@ from models.Transaction import Transaction
 
 class Schedule:
     transactionList: list[Transaction] # daftar transaksi
-    resourceList: list[Resource] # daftar resource
+    resourceList: list[Resource] # daftar resource -> THIS SHOULD BE SET NOT LIST
     operationQueue: list[Operation] # daftar antrean dari operasi yang mau dijalankan
     operationWaitingList: list[Operation] # daftar operasi yang dihentikan sementara
 
+    # Class variable to store the single instance of Schedule
+    _instance = None
+
+    def __new__(cls, opQueue: list[Operation], resList: list[Resource], txList: list[Transaction]):
+        """Ensure only one instance of Schedule exists."""
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+            cls._instance.operationQueue = opQueue
+            cls._instance.resourceList = resList
+            cls._instance.transactionList = txList
+            cls._instance.operationWaitingList = []
+        return cls._instance
+
     def __init__(self, opQueue: list[Operation], resList: list[Resource], txList: list[Transaction]):
-        self.operationQueue = opQueue
-        self.resourceList = resList
-        self.transactionList = txList
-        self.operationWaitingList = []
+        """Initialize the Schedule if it's the first time being created."""
+        # The __init__ method will only run when the instance is created for the first time.
+        pass
 
     # Method getter
     def getTransactionList(self):

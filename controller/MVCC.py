@@ -12,6 +12,13 @@ class MVCC:
         self.result = []
         self.transaction_history = []
 
+    def process_query(self, query: Operation) -> Response:
+        """
+        Execute the concurrency control mechanism's logic (e.g., validate locks, resolve conflicts).
+        Implement this function, call the log_object and validate_object method that may be needed
+        """
+        pass
+
     def log_object(self, resource: Resource, transaction_id: int): #rough implementation
         """Logs a transaction's interaction with a resource."""
         self.transaction_history.append({

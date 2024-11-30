@@ -37,6 +37,13 @@ class TwoPhaseLocking(ControllerMethod, ABC):
         except ValueError as e:
             raise ValueError(f"Invalid input sequence: {e}")
 
+    def process_query(self, query: Operation) -> Response:
+        """
+        Execute the concurrency control mechanism's logic (e.g., validate locks, resolve conflicts).
+        Implement this function, call the log_object and validate_object method that may be needed
+        """
+        pass
+    
     def log_object(self, resource: Resource, transaction_id: int): #rough implementation
         self.transaction_history.append({
             "transaction": transaction_id,
@@ -81,18 +88,24 @@ class TwoPhaseLocking(ControllerMethod, ABC):
         self.log_transaction(transaction, table, "XL", "Success")
         return True
 
-    def release_locks(self, transaction: int):
+    def release_locks(self, transaction: Transaction):
         """Release all locks held by a transaction."""
-        for table, holder in list(self.exclusive_lock_table.items()):
-            if holder == transaction:
-                del self.exclusive_lock_table[table]
-                self.log_transaction(transaction, table, "UL", "Success")
-        for table, holders in list(self.shared_lock_table.items()):
-            if transaction in holders:
-                holders.remove(transaction)
-                self.log_transaction(transaction, table, "UL", "Success")
-                if not holders:
-                    del self.shared_lock_table[table]
+        for resource in transaction.getSharedLockList():
+            if resource in schedule.getResourceList():
+                resource.deleteLockHolder(transaction, S)
+        for resource in transaction.getExclusiveLockList():
+            if resource in schedule.getResourceList():
+                resource.deleteLockHolder(transaction, X)
+        # for table, holder in list(self.exclusive_lock_table.items()):
+        #     if holder == transaction:
+        #         del self.exclusive_lock_table[table]
+        #         self.log_transaction(transaction, table, "UL", "Success")
+        # for table, holders in list(self.shared_lock_table.items()):
+        #     if transaction in holders:
+        #         holders.remove(transaction)
+        #         self.log_transaction(transaction, table, "UL", "Success")
+        #         if not holders:
+        #             del self.shared_lock_table[table]
 
     def wait_die(self, current: dict):
         """Deadlock prevention using the wait-die scheme."""
@@ -115,13 +128,20 @@ class TwoPhaseLocking(ControllerMethod, ABC):
         self.release_locks(transaction)
         self.log_transaction(transaction, "-", "Commit", "Success")
 
+    # def abort(self, current: dict):
+    #     """Abort a transaction."""
+    #     transaction = current["transaction"]
+    #     self.sequence = [op for op in self.sequence if op["transaction"] != transaction]
+    #     self.result = [op for op in self.result if op["transaction"] != transaction]
+    #     self.release_locks(transaction)
+    #     self.log_transaction(transaction, current.get("table", "-"), "Abort", "Abort")
     def abort(self, current: dict):
         """Abort a transaction."""
         transaction = current["transaction"]
-        self.sequence = [op for op in self.sequence if op["transaction"] != transaction]
-        self.result = [op for op in self.result if op["transaction"] != transaction]
+        transaction_id = transaction.getTransactionID
+        schedule.setOperationQueue([op for op in schedule.getOperationQueue if op.getOpTransactionID != transaction_id])
+        schedule.setOperationWaitingList([op for op in schedule.getOperationWaitingList if op.getOpTransactionID != transaction_id])
         self.release_locks(transaction)
-        self.log_transaction(transaction, current.get("table", "-"), "Abort", "Abort")
 
     def run_queue(self):
         """Process queued operations."""

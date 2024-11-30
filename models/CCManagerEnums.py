@@ -25,3 +25,7 @@ class TransactionStatus(Enum):
 class Action(Enum):
     READ = 'read'
     WRITE = 'write'
+class ResponseType(Enum):
+    ALLOWED: 'Allowed'
+    WAITING: 'Waiting'
+    ABORT: 'Abort'
