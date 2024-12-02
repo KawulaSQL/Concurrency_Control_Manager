@@ -4,6 +4,7 @@ from models.Resource import Resource
 from models.CCManagerEnums import Action
 from models.Response import Response
 from ControllerMethod import ControllerMethod
+from models.Transaction import Transaction
 class TwoPhaseLocking(ControllerMethod, ABC):
     def __init__(self, input_sequence: str):
         self.sequence = []

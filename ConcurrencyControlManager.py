@@ -37,11 +37,11 @@ class ConcurrencyControlManager:
         :return: The ID of the new transaction.
         """
         new_transaction = Transaction(queries) #Initialize new transaction
-        schedule.addTransaction(new_transaction) #Adding the new transaction to transaction list
+        self.schedule.addTransaction(new_transaction) #Adding the new transaction to transaction list
         for operation in new_transaction.operationList: #Enqueue all operation in queue list
-            schedule.enqueue(operation)
+            self.schedule.enqueue(operation)
             for operation_resource in operation.getOperationResource: #For each operation, add the resource needed to schedule resource
-                schedule.addResource(operation_resource)
+                self.schedule.addResource(operation_resource)
         return new_transaction.getTransactionID()
 
     def notify_executed_query(executedQuery: Operation):
@@ -61,7 +61,7 @@ class ConcurrencyControlManager:
             transaction.setTransactionStatus(TransactionStatus.PARTIALLYCOMMITTED)
 
 
-    def notify_transaction_state(self, transaction_id: int, action: string):
+    def notify_transaction_state(self, transaction_id: int, action: str):
         """
         Recovery manager call this function to change the transaction state after action commit or abort.
         This procedure will change the transaction status and call the end_transaction procedure.
@@ -79,7 +79,7 @@ class ConcurrencyControlManager:
         elif action=="Aborted":
             transaction.setTransactionStatus(TransactionStatus.ABORTED)
             print(f"Transaction with ID {transaction_id} is aborted.")
-        end_transaction(transaction)
+        self.end_transaction(transaction)
         
 
     def end_transaction(self, transaction: Transaction):
@@ -91,7 +91,7 @@ class ConcurrencyControlManager:
         """
         transaction.setTransactionStatus(TransactionStatus.TERMINATED) #Choose between below or this
         print(f"Transaction with ID {transaction.getTransactionID} is terminated.")
-        schedule.setTransactionList([tx for tx in self.transactionList if tx.txID != transaction_id]) #Choose between above or this
+        self.schedule.setTransactionList([tx for tx in self.transactionList if tx.txID != transaction_id]) #Choose between above or this
 
     def request_rollback(self, transaction: int):
         """

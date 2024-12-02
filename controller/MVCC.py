@@ -2,8 +2,8 @@ from datetime import datetime
 from models.Operation import Operation
 from models.Resource import Resource
 from models.Transaction import Transaction
-from models.CCManagerEnums import OperationType, OperationStatus, TransactionStatus
-
+from models.CCManagerEnums import OperationType, OperationStatus, TransactionStatus, Action
+from models.Response import Response
 class MVCC:
     def __init__(self):
         self.sequence = []

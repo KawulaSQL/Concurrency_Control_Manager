@@ -12,7 +12,7 @@ class Operation:
     __opTx:str #transaksi dari operasi
     __opResource:list[Resource] #resource dari operasi
 
-    def __init__(self, typeOp:OperationType, tx:str, res:Resource): #konstruktor Operation
+    def __init__(self, typeOp:OperationType, tx:str, res:Resource, transactionID: int): #konstruktor Operation
         self.__opType=typeOp
         self.__opTx=tx
         self.__opResource=res
