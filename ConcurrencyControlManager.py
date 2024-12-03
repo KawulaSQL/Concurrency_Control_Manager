@@ -1,10 +1,9 @@
-from controller.TwoPhaseLocking import TwoPhaseLocking
-from controller.MVCC import MVCC
-from controller.ControllerMethod import ControllerMethod
+from models.TwoPhaseLocking import TwoPhaseLocking
+from models.MVCC import MVCC
+from models.ControllerMethod import ControllerMethod
 from models.Schedule import Schedule
 from models.Transaction import Transaction
 from models.Operation import Operation
-from models.Resource import Resource
 from models.Response import Response
 from models.CCManagerEnums import ResponseType, OperationStatus, TransactionStatus
 import time

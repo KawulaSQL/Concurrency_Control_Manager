@@ -2,7 +2,7 @@ import threading
 import time
 from models.Resource import Resource
 from models.CCManagerEnums import OperationType, OperationStatus
-from ConcurrencyControlManager import ConcurrencyControlManager
+from ConcurrencyControlManager import ConcurrencyControlManager,Operation
 
 def main():
     # Initialize the ConcurrencyControlManager

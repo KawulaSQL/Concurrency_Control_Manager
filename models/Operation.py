@@ -1,4 +1,4 @@
-from models.Resource import *
+from models.Resource import Resource
 from models.CCManagerEnums import OperationType,OperationStatus
 #kelas untuk menentukan jenis operasi yang ada di dalam suatu transaction
 class Operation:

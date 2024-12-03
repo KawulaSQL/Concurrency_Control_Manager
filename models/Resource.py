@@ -1,13 +1,10 @@
 from datetime import datetime
-from models.Transaction import Transaction
-from models.CCManagerEnums import LockType
 class Resource:
     #atribut resource
     __name:str = None #nama variabel dari resource
     __rts:datetime = None #read timestamp
     __wts:datetime = None # write timestamp
     versions:list[int] = None #versi dari resource (MVCC)
-    __lockHolderList:list[{Transaction,LockType}] = None #daftar pemegang lock dan transactionnya
     __data:str = None #data
 
     def __init__(self, name: str, rts: datetime = None, wts: datetime = None):
@@ -48,27 +45,7 @@ class Resource:
         self.__name = name
     def setVersion(self,version:int): #set versi resource
         self.__version=version
-    def setLockHolderList(self,lhList:list[{Transaction,LockType}]): #set lock holder list
-        self.__lockHolderList=lhList
-
-    #Method Add dan Delete
-    def addLockHolder(self,transaction:Transaction,locktype:LockType): #tambah lock holder baru
-        self.__lockHolderList.append({transaction,locktype})
-    def deleteLockHolder(self,transaction:Transaction,locktype:LockType = None):
-        '''
-            hapus berdasarkan transaction dan locktype
-            jika locktype gak ada, hapus berdasarkan transaction aja
-        '''
-        if locktype: #hapus semua lock holder berdasarkan transaction dan locktype
-            self.__lockHolderList = [
-                lock for lock in self.__lockHolderList 
-                if not (lock['Transaction'] == transaction and lock['LockType'] == locktype)
-            ]
-        else: #hapus semua lock holder berdasarkan transaction
-            self.__lockHolderList = [
-                lock for lock in self.__lockHolderList 
-                if lock['Transaction'] != transaction
-            ]
+    
     def add_version(self, value: str, wts: datetime):
         """Tambahkan versi baru ke resource."""
         self.versions.append({

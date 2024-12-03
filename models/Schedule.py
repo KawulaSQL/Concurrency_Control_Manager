@@ -1,13 +1,13 @@
 from models.Operation import Operation
 from models.Resource import Resource
 from models.Transaction import Transaction
-
+from models.CCManagerEnums import LockType
 class Schedule:
     transactionList: list[Transaction] # daftar transaksi
     resourceList: list[Resource] # daftar resource -> THIS SHOULD BE SET NOT LIST
     operationQueue: list[Operation] # daftar antrean dari operasi yang mau dijalankan
     operationWaitingList: list[Operation] # daftar operasi yang dihentikan sementara
-
+    __lockHolderList:list[{Transaction,LockType}] = None #daftar pemegang lock dan transactionnya
     # Class variable to store the single instance of Schedule
     _instance = None
 
@@ -59,3 +59,25 @@ class Schedule:
         self.operationQueue.append(op)
     def dequeue(self) -> Operation:
         return self.operationList.pop(0)
+    
+    def setLockHolderList(self,lhList:list[{Transaction,LockType}]): #set lock holder list
+        self.__lockHolderList=lhList
+
+    #Method Add dan Delete
+    def addLockHolder(self,transaction:Transaction,locktype:LockType): #tambah lock holder baru
+        self.__lockHolderList.append({transaction,locktype})
+    def deleteLockHolder(self,transaction:Transaction,locktype:LockType = None):
+        '''
+            hapus berdasarkan transaction dan locktype
+            jika locktype gak ada, hapus berdasarkan transaction aja
+        '''
+        if locktype: #hapus semua lock holder berdasarkan transaction dan locktype
+            self.__lockHolderList = [
+                lock for lock in self.__lockHolderList 
+                if not (lock['Transaction'] == transaction and lock['LockType'] == locktype)
+            ]
+        else: #hapus semua lock holder berdasarkan transaction
+            self.__lockHolderList = [
+                lock for lock in self.__lockHolderList 
+                if lock['Transaction'] != transaction
+            ]

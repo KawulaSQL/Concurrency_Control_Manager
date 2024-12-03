@@ -1,5 +1,4 @@
-from models.Operation import Operation
-from models.Resource import Resource
+from models.Operation import Operation,Resource
 from models.CCManagerEnums import TransactionStatus
 from datetime import datetime
 class Transaction:

@@ -2,8 +2,8 @@ from collections import defaultdict
 from abc import ABC
 from models.Resource import Resource
 from models.CCManagerEnums import Action
-from models.Response import Response
-from ControllerMethod import ControllerMethod
+from models.Response import Response,Operation
+from models.ControllerMethod import ControllerMethod
 from models.Transaction import Transaction
 class TwoPhaseLocking(ControllerMethod, ABC):
     def __init__(self, input_sequence: str):
@@ -90,13 +90,14 @@ class TwoPhaseLocking(ControllerMethod, ABC):
         return True
 
     def release_locks(self, transaction: Transaction):
-        """Release all locks held by a transaction."""
-        for resource in transaction.getSharedLockList():
-            if resource in schedule.getResourceList():
-                resource.deleteLockHolder(transaction, S)
-        for resource in transaction.getExclusiveLockList():
-            if resource in schedule.getResourceList():
-                resource.deleteLockHolder(transaction, X)
+        # """Release all locks held by a transaction."""
+        # for resource in transaction.getSharedLockList():
+        #     if resource in self.schedule.getResourceList():
+        #         resource.deleteLockHolder(transaction, S)
+        # for resource in transaction.getExclusiveLockList():
+        #     if resource in self.schedule.getResourceList():
+        #         resource.deleteLockHolder(transaction, X)
+        pass
         # for table, holder in list(self.exclusive_lock_table.items()):
         #     if holder == transaction:
         #         del self.exclusive_lock_table[table]
@@ -140,8 +141,8 @@ class TwoPhaseLocking(ControllerMethod, ABC):
         """Abort a transaction."""
         transaction = current["transaction"]
         transaction_id = transaction.getTransactionID
-        schedule.setOperationQueue([op for op in schedule.getOperationQueue if op.getOpTransactionID != transaction_id])
-        schedule.setOperationWaitingList([op for op in schedule.getOperationWaitingList if op.getOpTransactionID != transaction_id])
+        self.schedule.setOperationQueue([op for op in self.schedule.getOperationQueue if op.getOpTransactionID != transaction_id])
+        self.schedule.setOperationWaitingList([op for op in self.schedule.getOperationWaitingList if op.getOpTransactionID != transaction_id])
         self.release_locks(transaction)
 
     def run_queue(self):
