@@ -1,5 +1,5 @@
 from models.TwoPhaseLocking import TwoPhaseLocking
-from models.MVCC import MVCC
+from models.TimeStampOrdering import TimestampOrdering
 from models.ControllerMethod import ControllerMethod
 from models.Schedule import Schedule
 from models.Transaction import Transaction
@@ -18,8 +18,8 @@ class ConcurrencyControlManager:
         :param controller: A string to specify the concurrency control method ("2PL" or "MVCC").
                             Default is "2PL".
         """
-        if controller == "MVCC":
-            self.controller = MVCC()  # Create an MVCC instance
+        if controller == "TSO":
+            self.controller = TimestampOrdering()
         else:
             self.controller = TwoPhaseLocking()  # Default to TwoPhaseLocking if not "MVCC"
         
@@ -43,7 +43,7 @@ class ConcurrencyControlManager:
                 self.schedule.addResource(operation_resource)
         return new_transaction.getTransactionID()
 
-    def notify_executed_query(executedQuery: Operation):
+    def notify_executed_query(self, executedQuery: Operation):
         """
         When query processor send the log of executed queries, this procedure will be called to change the schedule state.
 
@@ -54,7 +54,7 @@ class ConcurrencyControlManager:
         #Update Operation Status, if Operation failed, abort transaction, request recovery manager to rollback
         if executedQuery.getOperationStatus() == OperationStatus.NE:
             transaction.setTransactionStatus(TransactionStatus.FAILED)
-            request_rollback(transaction_id)
+            self.request_rollback(transaction_id)
         #Update Transaction Status, if all Operations executed: mark as Partially Committed
         if all(op.getOperationStatus() == OperationStatus.E for op in transaction.getOperationList()):
             transaction.setTransactionStatus(TransactionStatus.PARTIALLYCOMMITTED)
@@ -90,7 +90,7 @@ class ConcurrencyControlManager:
         """
         transaction.setTransactionStatus(TransactionStatus.TERMINATED) #Choose between below or this
         print(f"Transaction with ID {transaction.getTransactionID} is terminated.")
-        self.schedule.setTransactionList([tx for tx in self.transactionList if tx.txID != transaction_id]) #Choose between above or this
+        self.schedule.setTransactionList([tx for tx in self.transactionList if tx.txID != transaction.getTransactionID]) #Choose between above or this
 
     def request_rollback(self, transaction: int):
         """
@@ -112,9 +112,9 @@ class ConcurrencyControlManager:
             while self.schedule.getOperationWaitingList():
                 current_waiting_operation = self.schedule.dequeueWaiting()
                 response = self.controller.process_query(current_waiting_operation)
-                send_response_to_processor(response)
+                self.send_response_to_processor(response)
                 if response.responseType==ResponseType.ABORT:    
-                    request_rollback(current_waiting_operation.getOpTransactionID)
+                    self.request_rollback(current_waiting_operation.getOpTransactionID)
 
             if not self.schedule.getOperationQueue(): 
                 time.sleep(1)
@@ -123,9 +123,9 @@ class ConcurrencyControlManager:
                 current_operation = self.schedule.dequeue()
                 self.controller.process_query(current_operation)
                 response = self.controller.process_query(current_operation)
-                send_response_to_processor(response)
+                self.send_response_to_processor(response)
                 if response.responseType==ResponseType.ABORT:    
-                    request_rollback(current_operation.getOpTransactionID)
+                    self.request_rollback(current_operation.getOpTransactionID)
                     
     def stop(self):
         """Stop the Concurrency Control Manager's run loop."""
