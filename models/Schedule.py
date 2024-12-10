@@ -35,7 +35,11 @@ class Schedule:
         return self.operationQueue
     def getOperationWaitingList(self):
         return self.operationWaitingList
-    
+    def getTransactionById(self,targetid:int):
+        for transaction in self.transactionList:
+            if(transaction.getTransactionID() == targetid):
+                return transaction
+        return None
     # Method setter
     def setTransactionList(self, txList: list[Transaction]):
         self.transactionList = txList

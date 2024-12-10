@@ -35,6 +35,7 @@ class TwoPhaseLocking(ControllerMethod, ABC):
             # Ensure each transaction has a commit
             if len([x for x in self.sequence if x["operation"] == 'C']) != len(set(self.timestamp)):
                 raise ValueError("Each transaction must have a commit operation.")
+            print(self.sequence)
         except ValueError as e:
             raise ValueError(f"Invalid input sequence: {e}")
 
@@ -162,6 +163,9 @@ class TwoPhaseLocking(ControllerMethod, ABC):
         while self.sequence:
             self.run_queue()
             current = self.sequence.pop(0)
+            print("Exclusive Lock List: ",self.exclusive_lock_table)
+            print("shared Lock List: ",self.shared_lock_table)
+            
             if current["operation"] == "C":
                 self.commit(current["transaction"])
             elif current["operation"] == "R" and self.shared_lock(current["transaction"], current["table"]):

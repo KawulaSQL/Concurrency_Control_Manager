@@ -2,24 +2,23 @@ from Operation import Operation,Resource
 from CCManagerEnums import TransactionStatus
 from datetime import datetime
 class Transaction:
-      txID: int = None #id transaction
-      txStatus: TransactionStatus = None #status transaction
-      operationList: list[Operation] = None #daftar operasi
-      sharedLockList: list[Resource] = None #daftar shared lock
-      exclusiveLockList: list[Resource] = None #daftar exclusive lock
-      startTS:datetime = None #start Timestamp
-      valTS:datetime = None #validation Timestamp
-      finishTS:datetime = None #finish Timestamp
+      txID: int  #id transaction
+      txStatus: TransactionStatus #status transaction
+      operationList: list[Operation] #daftar operasi
+      sharedLockList: list[Resource]  #daftar shared lock
+      exclusiveLockList: list[Resource]  #daftar exclusive lock
+      startTS:datetime  #start Timestamp
+      valTS:datetime  #validation Timestamp
+      finishTS:datetime #finish Timestamp
 
-      def __init__(self,txid: int, sl: list[Resource] = None, xl : list[Resource] = None, ol: list[Operation] = None):
-         #THIS SHOULD BE ADJUSTED TO begin_transaction function, jdi nanti dia ngirimnya apa
-         self.txID = txid
-         self.exclusiveLockList = xl
-         self.sharedLockList = sl
-         self.startTS = datetime.max
-         self.finishTS = datetime.max
-         self.valTS = datetime.max
-         self.operationList = ol
+      def __init__(self, txid: int, sl=None, xl=None, ol=None):
+        self.txID = txid
+        self.exclusiveLockList = xl or []
+        self.sharedLockList = sl or []
+        self.startTS = datetime.max
+        self.finishTS = datetime.max
+        self.valTS = datetime.max
+        self.operationList = ol or []
 
       #METHOD GETTER
       def getTransactionID(self):
@@ -81,3 +80,11 @@ class Transaction:
          self.valTS = datetime.max
       #  self.readSet=[]
       #  self.writeSet=[]
+
+      def printOperationList(self):
+         print(f"Daftar operation di transaction {self.getTransactionID()}")
+         for operation in self.operationList:
+            if(operation.getOperationType() != "C"):
+               print("Operation: ", operation.getOperationType(),operation.getOpTransactionID(),"(",operation.getOperationResource().getName(),")")
+            else:
+               print("Operation: ", operation.getOperationType(),operation.getOpTransactionID())

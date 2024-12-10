@@ -10,7 +10,7 @@ class Operation:
     __opType:OperationType #tipe operasi
     __opStatus:OperationStatus #status dari operasi
     __opTx:str #transaksi dari operasi
-    __opResource:list[Resource] #resource dari operasi
+    __opResource:Resource #resource dari operasi
 
     def __init__(self, typeOp:OperationType, tx:str, res:Resource, transactionID: int): #konstruktor Operation
         self.__opType=typeOp
