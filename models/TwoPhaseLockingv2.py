@@ -2,7 +2,7 @@ from abc import ABC
 from collections import defaultdict
 from ControllerMethod import ControllerMethod
 from Schedule import Schedule,Transaction,Operation,Resource
-class TwoPhaseLocking():
+class TwoPhaseLockingv2():
     def __init__(self, input_sequence: str):
         self.sequence = []
         self.timestamp = []
@@ -10,6 +10,8 @@ class TwoPhaseLocking():
         self.transactionIDSet = []
         self.exclusive_lock_table = {}
         self.shared_lock_table = defaultdict(list)
+        self.transaction_history = []
+        self.result = []
      # Parse input sequence
         try:
             input_sequence = input_sequence.rstrip(";").split(";")
@@ -58,37 +60,23 @@ class TwoPhaseLocking():
         except ValueError as e:
             raise ValueError(f"Invalid input sequence: {e}")
         
-    def shared_lock(self, operation:Operation ) -> bool:
-        """Acquire a shared lock."""
-        transactionList = self.schedule.getTransactionList()
-
-        for transaction in transactionList:
-            exclusiveLockList = transaction.getExclusiveLockList()
-            sharedLockList = transaction.getSharedLockList()
-
-            transactionID = transaction.getTransactionID()
-
-
-            #periksa apakah exclusive lock valid
-
-            if(resource in exclusiveLockList):
-                if(table.get)
-
-
-    def exclusive_lock(self, transaction: int, table: str) -> bool:
-        """Acquire an exclusive lock."""
-        if table in self.shared_lock_table:
-            if transaction in self.shared_lock_table[table] and len(self.shared_lock_table[table]) == 1:
-                self.shared_lock_table[table].remove(transaction)
-                self.exclusive_lock_table[table] = transaction
-                self.log_transaction(transaction, table, "UPL", "Success")
-                return True
-            return False
-        if table in self.exclusive_lock_table:
-            return self.exclusive_lock_table[table] == transaction
-        self.exclusive_lock_table[table] = transaction
-        self.log_transaction(transaction, table, "XL", "Success")
-        return True
+    def log_transaction(self, transaction, table, operation, status):
+        """Log transaction operations."""
+        self.transaction_history.append({
+            "transaction": transaction, "table": table, "operation": operation, "status": status
+        })
+    def result_string(self) -> str:
+        """Generate a result string from the operations."""
+        return ";".join(
+            f"{op['operation']}{op['transaction']}({op['table']})" if "table" in op else f"{op['operation']}{op['transaction']}"
+            for op in self.result
+        )
+    def history_string(self) -> str:
+        """Generate a string representation of transaction history."""
+        return "\n".join(
+            f"{entry['operation']} {entry['transaction']} {entry['table']} ({entry['status']})"
+            for entry in self.transaction_history
+        )
 if __name__ == "__main__":
     print("1. Enter sequence")
     print("2. File Input")
@@ -110,6 +98,6 @@ if __name__ == "__main__":
         exit()
 
     try:
-        tpl = TwoPhaseLocking(input_seq)
+        tpl = TwoPhaseLockingv2(input_seq)
     except Exception as e:
         print(f"Error: {e}")
