@@ -1,13 +1,8 @@
 from datetime import datetime
 from Transaction import Transaction
 from CCManagerEnums import LockType, LockStatus
-class Resource:
-    #atribut resource
-    __name:str = None #nama variabel dari resource
-    __rts:datetime = None #read timestamp
-    __wts:datetime = None # write timestamp
-    __lockHolderList: list[tuple(Transaction, LockType, Status)]
 
+class Resource:
     def __init__(self, name: str, rts: datetime = None, wts: datetime = None):
         """
         Constructor for the Resource class.
@@ -16,14 +11,32 @@ class Resource:
         :param rts: Read timestamp (default is current time).
         :param wts: Write timestamp (default is current time).
         """
-        self.__name = name
-        self.__rts = rts if rts is not None else datetime.now() 
-        self.__wts = wts if wts is not None else datetime.now()  
-        self.__lockHolderList = []  
+        self.__name: str = name
+        self.__rts: datetime = rts if rts is not None else datetime.now()
+        self.__wts: datetime = wts if wts is not None else datetime.now()
+        self.__lockHolderList = []
+
+    def __eq__(self, other):
+        """
+        Check equality based on resource name.
+        """
+        if isinstance(other, Resource):
+            return self.__name == other.__name
+        return False
+
+    def __hash__(self):
+        """
+        Generate hash based on resource name.
+        """
+        return hash(self.__name)
+
+    def __repr__(self):
+        """
+        Represent the Resource for debugging purposes.
+        """
+        return f"Resource(name={self.__name})"
 
 
-    def getData(self): #method untuk mendapatkan nilai data dari resource
-        return self.__data
     def getRTS(self): #method untuk mendapatkan nilai read timestamp
         return self.__rts
     def getWTS(self): #method untuk mendapatkan nilai write timestamp

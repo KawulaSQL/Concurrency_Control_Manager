@@ -33,6 +33,7 @@ class ConcurrencyControlManager:
         this procedure will be called to change the schedule state.
         """
         new_transaction = Transaction() #Initialize new transaction
+        new_transaction.setTransactionStatus(TransactionStatus.ACTIVE)
         self.schedule.addTransaction(new_transaction) #Adding the new transaction to transaction list
         return new_transaction.getTransactionID()
 
