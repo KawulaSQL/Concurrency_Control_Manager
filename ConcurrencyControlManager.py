@@ -26,71 +26,76 @@ class ConcurrencyControlManager:
         self.schedule = Schedule(opQueue=[], resList=[], txList=[])
         self.running = True
 
-    def begin_transaction(self, queries: list[Operation]) -> int:
+    def begin_transaction() -> int:
         """
         Start a new transaction. This will give the new Query (queries) transaction id 
         and construct a new Transaction object. When query processor send the transactional or non-transactional queries to be processed, 
         this procedure will be called to change the schedule state.
-
-        :param queries: list[Operation] are the class of queries transactional or non transactional that is sent from models.QueryProcessor
-        :return: The ID of the new transaction.
         """
-        new_transaction = Transaction(queries) #Initialize new transaction
+        new_transaction = Transaction() #Initialize new transaction
         self.schedule.addTransaction(new_transaction) #Adding the new transaction to transaction list
-        for operation in new_transaction.operationList: #Enqueue all operation in queue list
-            self.schedule.enqueue(operation)
-            for operation_resource in operation.getOperationResource: #For each operation, add the resource needed to schedule resource
-                self.schedule.addResource(operation_resource)
+        # for operation in new_transaction.operationList: #Enqueue all operation in queue list
+        #     self.schedule.enqueue(operation)
+        #     for operation_resource in operation.getOperationResource: #For each operation, add the resource needed to schedule resource
+        #         self.schedule.addResource(operation_resource)
         return new_transaction.getTransactionID()
 
-    def notify_executed_query(self, executedQuery: Operation):
+    def validate_object(self, object: Operation) -> Response:
         """
-        When query processor send the log of executed queries, this procedure will be called to change the schedule state.
-
-        :param executedQuery: Operation are the class of executed query that is sent from models.QueryProcessor
+        Query processor call this function to get the information whether the operation can be run or not.
         """
-        transaction_id = executedQuery.getOpTransactionID()
-        transaction = next((tx for tx in self.schedule.getTransactionList if tx.getTransactionID == transaction_id), None)
-        #Update Operation Status, if Operation failed, abort transaction, request recovery manager to rollback
-        if executedQuery.getOperationStatus() == OperationStatus.NE:
-            transaction.setTransactionStatus(TransactionStatus.FAILED)
-            self.request_rollback(transaction_id)
-        #Update Transaction Status, if all Operations executed: mark as Partially Committed
-        if all(op.getOperationStatus() == OperationStatus.E for op in transaction.getOperationList()):
-            transaction.setTransactionStatus(TransactionStatus.PARTIALLYCOMMITTED)
+        self.controller.log_object(object)
 
-
-    def notify_transaction_state(self, transaction_id: int, action: str):
+    def end_transaction(self, transaction_id: int):
         """
-        Recovery manager call this function to change the transaction state after action commit or abort.
-        This procedure will change the transaction status and call the end_transaction procedure.
-
-        :param transaction_id: id of transaction
-        :param action: string ("Committed", "Aborted")
-        """
-        transaction = next((tx for tx in self.schedule.getTransactionList if tx.getTransactionID == transaction_id), None) #Acquiring the transaction
-        if not transaction:
-            print(f"Transaction with ID {transaction_id} not found.")
-            return
-        if action=="Committed":
-            transaction.setTransactionStatus(TransactionStatus.COMMITTED)
-            print(f"Transaction with ID {transaction_id} is committed.")
-        elif action=="Aborted":
-            transaction.setTransactionStatus(TransactionStatus.ABORTED)
-            print(f"Transaction with ID {transaction_id} is aborted.")
-        self.end_transaction(transaction)
-        
-
-    def end_transaction(self, transaction: Transaction):
-        """
-        Flushes objects belonging to a particular transaction after it has successfully committed/aborted. 
+        Flushes objects belonging to a particular transaction after it has successfully committed/aborted.
+        e.g. unlocking resources
         Also terminates the transaction.
 
         :param transaction_id: The ID of the transaction to end.
         """
+        #Unlock
         transaction.setTransactionStatus(TransactionStatus.TERMINATED) #Choose between below or this
         print(f"Transaction with ID {transaction.getTransactionID} is terminated.")
         self.schedule.setTransactionList([tx for tx in self.transactionList if tx.txID != transaction.getTransactionID]) #Choose between above or this
+    # def notify_executed_query(self, executedQuery: ExecutionResult):
+    #     """
+    #     When query processor send the log of executed queries, this procedure will be called to change the schedule state.
+
+    #     :param executedQuery: Operation are the class of executed query that is sent from models.QueryProcessor
+    #     """
+    #     transaction_id = executedQuery.getOpTransactionID()
+    #     transaction = next((tx for tx in self.schedule.getTransactionList if tx.getTransactionID == transaction_id), None)
+    #     #Update Operation Status, if Operation failed, abort transaction, request recovery manager to rollback
+    #     if executedQuery.getOperationStatus() == OperationStatus.NE:
+    #         transaction.setTransactionStatus(TransactionStatus.FAILED)
+    #         self.request_rollback(transaction_id)
+    #     #Update Transaction Status, if all Operations executed: mark as Partially Committed
+    #     if all(op.getOperationStatus() == OperationStatus.E for op in transaction.getOperationList()):
+    #         transaction.setTransactionStatus(TransactionStatus.PARTIALLYCOMMITTED)
+
+
+    # def notify_transaction_state(self, transaction_id: int, action: str):
+    #     """
+    #     Recovery manager call this function to change the transaction state after action commit or abort.
+    #     This procedure will change the transaction status and call the end_transaction procedure.
+
+    #     :param transaction_id: id of transaction
+    #     :param action: string ("Committed", "Aborted")
+    #     """
+    #     transaction = next((tx for tx in self.schedule.getTransactionList if tx.getTransactionID == transaction_id), None) #Acquiring the transaction
+    #     if not transaction:
+    #         print(f"Transaction with ID {transaction_id} not found.")
+    #         return
+    #     if action=="Committed":
+    #         transaction.setTransactionStatus(TransactionStatus.COMMITTED)
+    #         print(f"Transaction with ID {transaction_id} is committed.")
+    #     elif action=="Aborted":
+    #         transaction.setTransactionStatus(TransactionStatus.ABORTED)
+    #         print(f"Transaction with ID {transaction_id} is aborted.")
+    #     self.end_transaction(transaction)
+        
+
 
     def request_rollback(self, transaction: int):
         """
