@@ -34,25 +34,3 @@ class ControllerMethod(ABC):
         :return: A Response object indicating success or failure.
         """
         pass
-
-    @abstractmethod
-    def process_query(self, query: Operation) -> Response:
-        """
-        Execute the concurrency control mechanism's logic (e.g., validate locks, resolve conflicts).
-        Implement this function, call the log_object and validate_object method that may be needed
-        """
-        pass
-
-    @abstractmethod
-    def commit(self):
-        """
-        Commit a transaction, making its changes permanent.
-        """
-        pass
-
-    @abstractmethod
-    def abort(self):
-        """
-        Abort a transaction, rolling back any changes made.
-        """
-        pass

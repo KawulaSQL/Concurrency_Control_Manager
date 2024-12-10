@@ -2,7 +2,8 @@ from Operation import Operation,Resource
 from CCManagerEnums import TransactionStatus
 from datetime import datetime
 class Transaction:
-      txID: int = None #id transaction
+      TransactionCount: int = 0  # Static attribute to count the number of transactions
+      txID: int = None 
       txStatus: TransactionStatus = None #status transaction
       operationList: list[Operation] = None #daftar operasi
       sharedLockList: list[Resource] = None #daftar shared lock
@@ -11,15 +12,16 @@ class Transaction:
       valTS:datetime = None #validation Timestamp
       finishTS:datetime = None #finish Timestamp
 
-      def __init__(self,txid: int, sl: list[Resource] = None, xl : list[Resource] = None, ol: list[Operation] = None):
-         #THIS SHOULD BE ADJUSTED TO begin_transaction function, jdi nanti dia ngirimnya apa
-         self.txID = txid
-         self.exclusiveLockList = xl
-         self.sharedLockList = sl
-         self.startTS = datetime.max
-         self.finishTS = datetime.max
-         self.valTS = datetime.max
-         self.operationList = ol
+      # def __init__(self,sl: list[Resource] = None, xl : list[Resource] = None, ol: list[Operation] = None):
+      def __init__(self):
+         Transaction.TransactionCount += 1       
+         self.txID =  Transaction.TransactionCount 
+         # self.exclusiveLockList = xl
+         # self.sharedLockList = sl
+         # self.startTS = datetime.max
+         # self.finishTS = datetime.max
+         # self.valTS = datetime.max
+         # self.operationList = ol
 
       #METHOD GETTER
       def getTransactionID(self):

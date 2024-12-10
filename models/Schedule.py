@@ -4,10 +4,10 @@ from Transaction import Transaction
 from CCManagerEnums import LockType
 class Schedule:
     transactionList: list[Transaction] # daftar transaksi
-    resourceList: list[Resource] # daftar resource -> THIS SHOULD BE SET NOT LIST
-    operationQueue: list[Operation] # daftar antrean dari operasi yang mau dijalankan
-    operationWaitingList: list[Operation] # daftar operasi yang dihentikan sementara
-    __lockHolderList:list[{Transaction,LockType}] = None #daftar pemegang lock dan transactionnya
+    resourceList: set[Resource] # set of resource, behave like lock table
+    transactionWaitingList: list[Transaction]
+    # operationQueue: list[Operation] # daftar antrean dari operasi yang mau dijalankan
+    # __lockHolderList:list[{Transaction,LockType}] = None #daftar pemegang lock dan transactionnya
     # Class variable to store the single instance of Schedule
     _instance = None
 

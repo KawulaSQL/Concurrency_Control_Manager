@@ -7,10 +7,10 @@ class Operation:
         TIPE OPERASI DAN STATUS OPERASI YANG VALID LIHAT DI SOURCE CODE models/CCManagerEnums
     '''
     transactionID: int
-    __opType:OperationType #tipe operasi
-    __opStatus:OperationStatus #status dari operasi
-    __opTx:str #transaksi dari operasi
-    __opResource:list[Resource] #resource dari operasi
+    __opType:OperationType #tipe operasi / Action
+    __opResource:Resource #resource dari operasi
+    # __opStatus:OperationStatus #status dari operasi
+    # __opTx:str #transaksi dari operasi
 
     def __init__(self, typeOp:OperationType, tx:str, res:Resource, transactionID: int): #konstruktor Operation
         self.__opType=typeOp
