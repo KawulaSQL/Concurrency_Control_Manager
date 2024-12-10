@@ -1,12 +1,12 @@
 from datetime import datetime
-from Transaction import Transaction
-from CCManagerEnums import LockType, LockStatus
+# from Transaction import Transaction
+# from CCManagerEnums import LockType, LockStatus
 class Resource:
     #atribut resource
     __name:str = None #nama variabel dari resource
     __rts:datetime = None #read timestamp
     __wts:datetime = None # write timestamp
-    __lockHolderList: list[tuple(Transaction, LockType, Status)]
+    # __lockHolderList: list[tuple(Transaction, LockType, Status)]
 
     def __init__(self, name: str, rts: datetime = None, wts: datetime = None):
         """

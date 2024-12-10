@@ -1,5 +1,7 @@
+from Operation import Operation
 from Resource import Resource
 from Transaction import Transaction
+from CCManagerEnums import LockType
 class Schedule:
     transactionList: list[Transaction] # daftar transaksi
     resourceList: set[Resource] # set of resource, behave like lock table
