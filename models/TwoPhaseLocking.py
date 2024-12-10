@@ -1,10 +1,10 @@
 from collections import defaultdict
 from abc import ABC
-from models.Resource import Resource
-from models.CCManagerEnums import Action
-from models.Response import Response,Operation
-from models.ControllerMethod import ControllerMethod
-from models.Transaction import Transaction
+from Resource import Resource
+from CCManagerEnums import Action
+from Response import Response,Operation
+from ControllerMethod import ControllerMethod
+from Transaction import Transaction
 class TwoPhaseLocking(ControllerMethod, ABC):
     def __init__(self, input_sequence: str):
         self.sequence = []

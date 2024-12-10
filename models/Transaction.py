@@ -1,5 +1,5 @@
-from models.Operation import Operation,Resource
-from models.CCManagerEnums import TransactionStatus
+from Operation import Operation,Resource
+from CCManagerEnums import TransactionStatus
 from datetime import datetime
 class Transaction:
       txID: int = None #id transaction

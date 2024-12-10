@@ -1,11 +1,11 @@
-from models.TwoPhaseLocking import TwoPhaseLocking
-from models.TimeStampOrdering import TimestampOrdering
-from models.ControllerMethod import ControllerMethod
-from models.Schedule import Schedule
-from models.Transaction import Transaction
-from models.Operation import Operation
-from models.Response import Response
-from models.CCManagerEnums import ResponseType, OperationStatus, TransactionStatus
+from TwoPhaseLocking import TwoPhaseLocking
+from TimeStampOrdering import TimestampOrdering
+from ControllerMethod import ControllerMethod
+from Schedule import Schedule
+from Transaction import Transaction
+from Operation import Operation
+from Response import Response
+from CCManagerEnums import ResponseType, OperationStatus, TransactionStatus
 import time
 
 class ConcurrencyControlManager:

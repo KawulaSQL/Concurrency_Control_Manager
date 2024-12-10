@@ -1,7 +1,7 @@
-from models.ControllerMethod import ControllerMethod
-from models.Resource import Resource
-from models.CCManagerEnums import Action, ResponseType, OperationType
-from models.Response import Response, Operation
+from ControllerMethod import ControllerMethod
+from Resource import Resource
+from CCManagerEnums import Action, ResponseType, OperationType
+from Response import Response, Operation
 from datetime import datetime
 
 class TimestampOrdering(ControllerMethod):
