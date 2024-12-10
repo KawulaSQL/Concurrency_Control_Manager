@@ -1,11 +1,11 @@
-from TwoPhaseLocking import TwoPhaseLocking
-from TimeStampOrdering import TimestampOrdering
-from ControllerMethod import ControllerMethod
-from Schedule import Schedule
-from Transaction import Transaction
-from Operation import Operation
-from Response import Response
-from CCManagerEnums import ResponseType, OperationStatus, TransactionStatus
+from models.TwoPhaseLocking import TwoPhaseLocking
+from models.TimeStampOrdering import TimestampOrdering
+from models.ControllerMethod import ControllerMethod
+from models.Schedule import Schedule
+from models.Transaction import Transaction
+from models.Operation import Operation
+from models.Response import Response
+from models.CCManagerEnums import ResponseType, OperationStatus, TransactionStatus
 import time
 
 class ConcurrencyControlManager:
@@ -32,7 +32,7 @@ class ConcurrencyControlManager:
         and construct a new Transaction object. When query processor send the transactional or non-transactional queries to be processed, 
         this procedure will be called to change the schedule state.
 
-        :param queries: list[Operation] are the class of queries transactional or non transactional that is sent from QueryProcessor
+        :param queries: list[Operation] are the class of queries transactional or non transactional that is sent from models.QueryProcessor
         :return: The ID of the new transaction.
         """
         new_transaction = Transaction(queries) #Initialize new transaction
@@ -47,7 +47,7 @@ class ConcurrencyControlManager:
         """
         When query processor send the log of executed queries, this procedure will be called to change the schedule state.
 
-        :param executedQuery: Operation are the class of executed query that is sent from QueryProcessor
+        :param executedQuery: Operation are the class of executed query that is sent from models.QueryProcessor
         """
         transaction_id = executedQuery.getOpTransactionID()
         transaction = next((tx for tx in self.schedule.getTransactionList if tx.getTransactionID == transaction_id), None)
@@ -95,7 +95,7 @@ class ConcurrencyControlManager:
     def request_rollback(self, transaction: int):
         """
         This will notify the Failure Recovery Manager regarding the Transaction to be rolled back, 
-        calling function from failure recovery manager.
+        calling function from models.failure recovery manager.
 
         :param transaction: int the transaction id to be rolled back.
         """
@@ -103,7 +103,7 @@ class ConcurrencyControlManager:
     def send_response_to_processor(self, response: Response):
         """
         This will notify the Processor regarding the Query that can run/wait,
-        calling function from failure recovery manager.
+        calling function from models.failure recovery manager.
         """
 
 
