@@ -78,25 +78,34 @@ class TwoPhaseLocking(ControllerMethod, ABC):
         #             del self.shared_lock_table[table]
 
     def wait_die(self, current: dict):
-        """Deadlock prevention using the wait-die scheme."""
-        transaction = current["transaction"]
-        table = current["table"]
-        if (
-            table in self.exclusive_lock_table and
-            self.timestamp.index(transaction) < self.timestamp.index(self.exclusive_lock_table[table])
-        ) or (
-            table in self.shared_lock_table and
-            all(self.timestamp.index(transaction) < self.timestamp.index(t) for t in self.shared_lock_table[table])
-        ):
-            self.queue.append(current)
-            self.log_transaction(transaction, table, current["operation"], "Queue")
-        else:
-            self.abort(current)
+        """ IMPLEMENT THE LOGIC IN VALIDATE_OBJECT FUNCTION
+        Deadlock prevention using the wait-die scheme."""
+        # transaction = current["transaction"]
+        # table = current["table"]
+        # if (
+        #     table in self.exclusive_lock_table and
+        #     self.timestamp.index(transaction) < self.timestamp.index(self.exclusive_lock_table[table])
+        # ) or (
+        #     table in self.shared_lock_table and
+        #     all(self.timestamp.index(transaction) < self.timestamp.index(t) for t in self.shared_lock_table[table])
+        # ):
+        #     self.queue.append(current)
+        #     self.log_transaction(transaction, table, current["operation"], "Queue")
+        # else:
+        #     self.abort(current)
 
-    def commit(self, transaction: int):
+    def commit(self, transaction_id: int):
         """Commit a transaction and release its locks."""
-        self.release_locks(transaction)
-        self.log_transaction(transaction, "-", "Commit", "Success")
+        # self.release_locks(transaction)
+        # self.log_transaction(transaction, "-", "Commit", "Success")
+
+    def abort(self, transaction_id: int):
+        """Abort a transaction."""
+        # transaction = current["transaction"]
+        # transaction_id = transaction.getTransactionID
+        # self.schedule.setOperationQueue([op for op in self.schedule.getOperationQueue if op.getOpTransactionID != transaction_id])
+        # self.schedule.setOperationWaitingList([op for op in self.schedule.getOperationWaitingList if op.getOpTransactionID != transaction_id])
+        # self.release_locks(transaction)
 
     # def abort(self, current: dict):
     #     """Abort a transaction."""
@@ -105,10 +114,3 @@ class TwoPhaseLocking(ControllerMethod, ABC):
     #     self.result = [op for op in self.result if op["transaction"] != transaction]
     #     self.release_locks(transaction)
     #     self.log_transaction(transaction, current.get("table", "-"), "Abort", "Abort")
-    def abort(self, current: dict):
-        """Abort a transaction."""
-        transaction = current["transaction"]
-        transaction_id = transaction.getTransactionID
-        self.schedule.setOperationQueue([op for op in self.schedule.getOperationQueue if op.getOpTransactionID != transaction_id])
-        self.schedule.setOperationWaitingList([op for op in self.schedule.getOperationWaitingList if op.getOpTransactionID != transaction_id])
-        self.release_locks(transaction)

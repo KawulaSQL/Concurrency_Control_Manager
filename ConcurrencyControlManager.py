@@ -40,14 +40,15 @@ class ConcurrencyControlManager:
         """
         Query processor call this function after getting validating operation can be run
         """
-
+        return self.controller.log_object
 
     def validate_object(self, object: Operation) -> Response:
         """
         Query processor call this function to get the information whether the operation can be run or not.
         """
+        return self.controller.validate_object(object)
 
-    def end_transaction(self, transaction_id: int):
+    def end_transaction(self, transaction_id: int, reason: string):
         """
         Flushes objects belonging to a particular transaction after it has successfully committed/aborted.
         e.g. unlocking resources
@@ -55,7 +56,9 @@ class ConcurrencyControlManager:
 
         :param transaction_id: The ID of the transaction to end.
         """
-        #Unlock
+        if (reason=="COMMITTED"):
+            self.controller.commit(transaction_id)
+        elif (reason=="ABORTED"):
+            self.controller.abort(transaction_id)
         transaction.setTransactionStatus(TransactionStatus.TERMINATED) #Choose between below or this
         print(f"Transaction with ID {transaction.getTransactionID} is terminated.")
-        self.schedule.setTransactionList([tx for tx in self.transactionList if tx.txID != transaction.getTransactionID]) #Choose between above or this

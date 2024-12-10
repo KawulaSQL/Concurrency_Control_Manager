@@ -1,14 +1,9 @@
-from Operation import Operation
 from Resource import Resource
 from Transaction import Transaction
-from CCManagerEnums import LockType
 class Schedule:
     transactionList: list[Transaction] # daftar transaksi
     resourceList: set[Resource] # set of resource, behave like lock table
     transactionWaitingList: list[Transaction]
-    # operationQueue: list[Operation] # daftar antrean dari operasi yang mau dijalankan
-    # __lockHolderList:list[{Transaction,LockType}] = None #daftar pemegang lock dan transactionnya
-    # Class variable to store the single instance of Schedule
     _instance = None
 
     def __new__(cls, opQueue: list[Operation], resList: list[Resource], txList: list[Transaction]):
