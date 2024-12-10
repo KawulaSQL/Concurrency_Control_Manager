@@ -1,6 +1,7 @@
 from collections import defaultdict
 from abc import ABC
 from Resource import Resource
+from Response import Response
 from CCManagerEnums import Action
 from Operation import Operation
 from ControllerMethod import ControllerMethod
@@ -28,6 +29,11 @@ class TwoPhaseLocking(ControllerMethod, ABC):
         # else:
         #     success = False
         # return Response(success=success, message="Validation successful" if success else "Validation failed")
+
+    def end_transaction(self, transaction_id: int):
+        """
+        Implementation
+        """
 
         
     def shared_lock(self, transaction: int, table: str) -> bool:
@@ -94,13 +100,13 @@ class TwoPhaseLocking(ControllerMethod, ABC):
         # else:
         #     self.abort(current)
 
-    def commit(self, transaction_id: int):
-        """Commit a transaction and release its locks."""
+    # def commit(self, transaction_id: int):
+    #     """Commit a transaction and release its locks."""
         # self.release_locks(transaction)
         # self.log_transaction(transaction, "-", "Commit", "Success")
 
-    def abort(self, transaction_id: int):
-        """Abort a transaction."""
+    # def abort(self, transaction_id: int):
+    #     """Abort a transaction."""
         # transaction = current["transaction"]
         # transaction_id = transaction.getTransactionID
         # self.schedule.setOperationQueue([op for op in self.schedule.getOperationQueue if op.getOpTransactionID != transaction_id])

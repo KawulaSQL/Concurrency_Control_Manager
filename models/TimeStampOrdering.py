@@ -1,7 +1,8 @@
 from ControllerMethod import ControllerMethod
 from Resource import Resource
 from CCManagerEnums import Action, ResponseType, OperationType
-from Response import Response, Operation
+from Response import Response
+from Operation import Operation
 from datetime import datetime
 
 class TimestampOrdering(ControllerMethod):
@@ -33,12 +34,17 @@ class TimestampOrdering(ControllerMethod):
         #     "timestamp": datetime.now()
         # })
 
-    def commit(self, transaction_id: int):
-        if transaction_id in self.aborted_transactions:
-            self.aborted_transactions.remove(transaction_id)
+    def end_transaction(self, transaction_id: int):
+        """
+        Implementation
+        """
 
-    def abort(self, transaction_id: int):
-        self.aborted_transactions.add(transaction_id)
+    # def commit(self, transaction_id: int):
+    #     if transaction_id in self.aborted_transactions:
+    #         self.aborted_transactions.remove(transaction_id)
+
+    # def abort(self, transaction_id: int):
+    #     self.aborted_transactions.add(transaction_id)
 
     # def get_transaction_history(self):
     #     return self.transaction_history

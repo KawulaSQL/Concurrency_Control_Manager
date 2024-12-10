@@ -48,7 +48,7 @@ class ConcurrencyControlManager:
         """
         return self.controller.validate_object(object)
 
-    def end_transaction(self, transaction_id: int, reason: string):
+    def end_transaction(self, transaction_id: int):
         """
         Flushes objects belonging to a particular transaction after it has successfully committed/aborted.
         e.g. unlocking resources
@@ -56,9 +56,6 @@ class ConcurrencyControlManager:
 
         :param transaction_id: The ID of the transaction to end.
         """
-        if (reason=="COMMITTED"):
-            self.controller.commit(transaction_id)
-        elif (reason=="ABORTED"):
-            self.controller.abort(transaction_id)
+        self.controller.end_transaction(transaction_id)
         transaction.setTransactionStatus(TransactionStatus.TERMINATED) #Choose between below or this
         print(f"Transaction with ID {transaction.getTransactionID} is terminated.")
