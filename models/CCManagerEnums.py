@@ -4,6 +4,9 @@ class LockType(Enum):
     S = "Shared"
     X = "Exclusive"
     N = "None"
+class LockStatus(Enum):
+    HOLDING = "Holding"
+    WAITING = "Waiting"
 class OperationType(Enum):
     R = "Read"
     W = "Write"
