@@ -113,6 +113,34 @@ class TwoPhaseLockingv2():
         self.exclusive_lock_table[resource] = transaction.getTransactionID()
         self.log_transaction(transaction.getTransactionID(), resource, "XL", "Success")
         return True
+
+
+    def waitDie(self, transaction: Transaction, resource: str, lock_type: str) -> bool:
+        holder_id = self.exclusive_lock_table.get(resource) or (self.shared_lock_table[resource][0] if self.shared_lock_table[resource] else None)
+        if holder_id is None:
+            return False
+
+        holder_tx = self.schedule.getTransactionByID(holder_id)
+        if self.timestamp[transaction.getTransactionID() - 1] < self.timestamp[holder_tx.getTransactionID() - 1]:
+            self.log_transaction(transaction.getTransactionID(), resource, lock_type, "Wait")
+            return False
+        else:
+            self.log_transaction(transaction.getTransactionID(), resource, lock_type, "Abort")
+            self.abort_transaction(transaction)
+            return False
+
+    def abort_transaction(self, transaction: Transaction):
+        transaction_id = transaction.getTransactionID()
+
+        for resource, holder_id in self.exclusive_lock_table.items():
+            if holder_id == transaction_id:
+                del self.exclusive_lock_table[resource]
+
+        for resource, holders in self.shared_lock_table.items():
+            if transaction_id in holders:
+                holders.remove(transaction_id)
+
+        self.schedule.removeTransaction(transaction)
     
     def testSL(self):
         current = self.sequence.pop(0)
