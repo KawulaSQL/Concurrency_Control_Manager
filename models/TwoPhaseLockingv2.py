@@ -96,17 +96,17 @@ class TwoPhaseLockingv2(ControllerMethod):
         self.shared_lock_table[resource].append(transaction.getTransactionID())
         self.log_transaction(transaction.getTransactionID(), resource, "SL", "Success")
         return True
-    def release_locks(self, transaction:Transaction):
+    def release_locks(self, transaction_id: int):
         #release semua resource dari transaction 
 
         #release shared lock semua resource yang dilock oleh transaction ke-transactionID
         for resource in self.shared_lock_table:
-            if (transaction.getTransactionID() in self.shared_lock_table[resource]):
-                self.shared_lock_table[resource].remove(transaction.getTransactionID())
+            if (transaction_id in self.shared_lock_table[resource]):
+                self.shared_lock_table[resource].remove(transaction_id)
 
         #release exclusive lock semua resource yang dilock oleh transaction ke-transactionID
         for resource in list(self.exclusive_lock_table.keys()):  
-            if transaction.getTransactionID() == self.exclusive_lock_table[resource]:
+            if transaction_id == self.exclusive_lock_table[resource]:
                 self.exclusive_lock_table.pop(resource)
 
     def exclusive_lock(self, transaction: Transaction, resource: str) -> bool:
@@ -255,8 +255,11 @@ class TwoPhaseLockingv2(ControllerMethod):
             self.schedule.addWaitingTransaction(transaction)
 
         self.schedule.removeTransaction(transaction)
+        self.release_locks(transaction_id)
+
         transaction.setTransactionStatus(TransactionStatus.TERMINATED)
         print(f"Transaction {transaction_id} removed and terminated.")
+        # del transaction
 
 
 #main di bawah cuma buat testing 
