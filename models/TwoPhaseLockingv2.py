@@ -66,106 +66,106 @@ class TwoPhaseLockingv2(ControllerMethod):
         # except ValueError as e:
         #     raise ValueError(f"Invalid input sequence: {e}")
         
-    def log_transaction(self, transaction, table, operation, status):
-        """Log transaction operations."""
-        self.transaction_history.append({
-            "transaction": transaction, "table": table, "operation": operation, "status": status
-        })
-    def result_string(self) -> str:
-        """Generate a result string from the operations."""
-        return ";".join(
-            f"{op['operation']}{op['transaction']}({op['table']})" if "table" in op else f"{op['operation']}{op['transaction']}"
-            for op in self.result
-        )
-    def history_string(self) -> str:
-        """Generate a string representation of transaction history."""
-        return "\n".join(
-            f"{entry['operation']} {entry['transaction']} {entry['table']} ({entry['status']})"
-            for entry in self.transaction_history
-        )
-    def shared_lock(self, transaction: Transaction, resource: str) -> bool:
-        """Acquire a shared lock."""
-        if resource in self.exclusive_lock_table: #jika resource sudah dilock sama exclusive lock
-            if self.exclusive_lock_table[resource] == transaction.getTransactionID(): #jika exclusive lock melock resource di transaksi yang sama
-                return True  #lock granted
-            return False #lock gagal granted, masuk ke skema deadlock prevention
-        if transaction.getTransactionID() in self.shared_lock_table[resource]:#jika resource sudah dilock sama shared lock dimanapun posisinya, keynya juga granted
-            return True 
+    # def log_transaction(self, transaction, table, operation, status):
+    #     """Log transaction operations."""
+    #     self.transaction_history.append({
+    #         "transaction": transaction, "table": table, "operation": operation, "status": status
+    #     })
+    # def result_string(self) -> str:
+    #     """Generate a result string from the operations."""
+    #     return ";".join(
+    #         f"{op['operation']}{op['transaction']}({op['table']})" if "table" in op else f"{op['operation']}{op['transaction']}"
+    #         for op in self.result
+    #     )
+    # def history_string(self) -> str:
+    #     """Generate a string representation of transaction history."""
+    #     return "\n".join(
+    #         f"{entry['operation']} {entry['transaction']} {entry['table']} ({entry['status']})"
+    #         for entry in self.transaction_history
+    #     )
+    # def shared_lock(self, transaction: Transaction, resource: str) -> bool:
+    #     """Acquire a shared lock."""
+    #     if resource in self.exclusive_lock_table: #jika resource sudah dilock sama exclusive lock
+    #         if self.exclusive_lock_table[resource] == transaction.getTransactionID(): #jika exclusive lock melock resource di transaksi yang sama
+    #             return True  #lock granted
+    #         return False #lock gagal granted, masuk ke skema deadlock prevention
+    #     if transaction.getTransactionID() in self.shared_lock_table[resource]:#jika resource sudah dilock sama shared lock dimanapun posisinya, keynya juga granted
+    #         return True 
         
-        #grant shared lock baru ke resource
-        self.shared_lock_table[resource].append(transaction.getTransactionID())
-        self.log_transaction(transaction.getTransactionID(), resource, "SL", "Success")
-        return True
-    def release_locks(self, transaction_id: int):
-        #release semua resource dari transaction 
+    #     #grant shared lock baru ke resource
+    #     self.shared_lock_table[resource].append(transaction.getTransactionID())
+    #     self.log_transaction(transaction.getTransactionID(), resource, "SL", "Success")
+    #     return True
+    # def release_locks(self, transaction_id: int):
+    #     #release semua resource dari transaction 
 
-        #release shared lock semua resource yang dilock oleh transaction ke-transactionID
-        for resource in self.shared_lock_table:
-            if (transaction_id in self.shared_lock_table[resource]):
-                self.shared_lock_table[resource].remove(transaction_id)
+    #     #release shared lock semua resource yang dilock oleh transaction ke-transactionID
+    #     for resource in self.shared_lock_table:
+    #         if (transaction_id in self.shared_lock_table[resource]):
+    #             self.shared_lock_table[resource].remove(transaction_id)
 
-        #release exclusive lock semua resource yang dilock oleh transaction ke-transactionID
-        for resource in list(self.exclusive_lock_table.keys()):  
-            if transaction_id == self.exclusive_lock_table[resource]:
-                self.exclusive_lock_table.pop(resource)
+    #     #release exclusive lock semua resource yang dilock oleh transaction ke-transactionID
+    #     for resource in list(self.exclusive_lock_table.keys()):  
+    #         if transaction_id == self.exclusive_lock_table[resource]:
+    #             self.exclusive_lock_table.pop(resource)
 
-    def exclusive_lock(self, transaction: Transaction, resource: str) -> bool:
-        """Acquire an exclusive lock."""
-        if resource in self.shared_lock_table: #jika resource ada di shared_lock_table
-            if transaction.getTransactionID() in self.shared_lock_table[resource] and len(self.shared_lock_table[resource]) == 1:
-                #jika resource udah pernah di shared lock dengan transaction yang sama dan transaction itu satu satunya yang pernah shared lock
-                #upgrade key dari shared lock ke exclusive lock
-                self.shared_lock_table[resource].remove(transaction.getTransactionID())
-                self.exclusive_lock_table[resource] = transaction.getTransactionID()
-                self.log_transaction(transaction.getTransactionID(), resource, "UPL", "Success")
-                return True
-            return False
-        if resource in self.exclusive_lock_table: # jika resource sudah pernah dilock oleh exclusive lock
-            return self.exclusive_lock_table[resource] == transaction.getTransactionID() 
-            #granted jika di exclusive lock oleh transaksi yang sama
-            #grant gagal jika transaksi yang exclusive lock beda
-        #grant exclusive lock baru ke resource
-        self.exclusive_lock_table[resource] = transaction.getTransactionID()
-        self.log_transaction(transaction.getTransactionID(), resource, "XL", "Success")
-        return True
+    # def exclusive_lock(self, transaction: Transaction, resource: str) -> bool:
+    #     """Acquire an exclusive lock."""
+    #     if resource in self.shared_lock_table: #jika resource ada di shared_lock_table
+    #         if transaction.getTransactionID() in self.shared_lock_table[resource] and len(self.shared_lock_table[resource]) == 1:
+    #             #jika resource udah pernah di shared lock dengan transaction yang sama dan transaction itu satu satunya yang pernah shared lock
+    #             #upgrade key dari shared lock ke exclusive lock
+    #             self.shared_lock_table[resource].remove(transaction.getTransactionID())
+    #             self.exclusive_lock_table[resource] = transaction.getTransactionID()
+    #             self.log_transaction(transaction.getTransactionID(), resource, "UPL", "Success")
+    #             return True
+    #         return False
+    #     if resource in self.exclusive_lock_table: # jika resource sudah pernah dilock oleh exclusive lock
+    #         return self.exclusive_lock_table[resource] == transaction.getTransactionID() 
+    #         #granted jika di exclusive lock oleh transaksi yang sama
+    #         #grant gagal jika transaksi yang exclusive lock beda
+    #     #grant exclusive lock baru ke resource
+    #     self.exclusive_lock_table[resource] = transaction.getTransactionID()
+    #     self.log_transaction(transaction.getTransactionID(), resource, "XL", "Success")
+    #     return True
 
 
-    def waitDie(self, transaction: Transaction, resource: str, lock_type: str) -> bool:
-        holder_id = self.exclusive_lock_table.get(resource) or (self.shared_lock_table[resource][0] if self.shared_lock_table[resource] else None)
-        if holder_id is None:
-            return False
+    # def waitDie(self, transaction: Transaction, resource: str, lock_type: str) -> bool:
+    #     holder_id = self.exclusive_lock_table.get(resource) or (self.shared_lock_table[resource][0] if self.shared_lock_table[resource] else None)
+    #     if holder_id is None:
+    #         return False
 
-        holder_tx = self.schedule.getTransactionByID(holder_id)
-        if self.timestamp[transaction.getTransactionID() - 1] < self.timestamp[holder_tx.getTransactionID() - 1]:
-            self.log_transaction(transaction.getTransactionID(), resource, lock_type, "Wait")
-            return False
-        else:
-            self.log_transaction(transaction.getTransactionID(), resource, lock_type, "Abort")
-            self.abort_transaction(transaction)
-            return False
+    #     holder_tx = self.schedule.getTransactionByID(holder_id)
+    #     if self.timestamp[transaction.getTransactionID() - 1] < self.timestamp[holder_tx.getTransactionID() - 1]:
+    #         self.log_transaction(transaction.getTransactionID(), resource, lock_type, "Wait")
+    #         return False
+    #     else:
+    #         self.log_transaction(transaction.getTransactionID(), resource, lock_type, "Abort")
+    #         self.abort_transaction(transaction)
+    #         return False
 
-    def abort_transaction(self, transaction: Transaction):
-        transaction_id = transaction.getTransactionID()
+    # def abort_transaction(self, transaction: Transaction):
+    #     transaction_id = transaction.getTransactionID()
 
-        for resource, holder_id in self.exclusive_lock_table.items():
-            if holder_id == transaction_id:
-                del self.exclusive_lock_table[resource]
+    #     for resource, holder_id in self.exclusive_lock_table.items():
+    #         if holder_id == transaction_id:
+    #             del self.exclusive_lock_table[resource]
 
-        for resource, holders in self.shared_lock_table.items():
-            if transaction_id in holders:
-                holders.remove(transaction_id)
+    #     for resource, holders in self.shared_lock_table.items():
+    #         if transaction_id in holders:
+    #             holders.remove(transaction_id)
 
-        self.schedule.removeTransaction(transaction)
+    #     self.schedule.removeTransaction(transaction)
     
-    def testSL(self):
-        current = self.sequence.pop(0)
-        if(current["operation"].getOperationType() == "R" and (self.shared_lock(current["transaction"],current["resource"]))):
-            self.result.append(current)
+    # def testSL(self):
+    #     current = self.sequence.pop(0)
+    #     if(current["operation"].getOperationType() == "R" and (self.shared_lock(current["transaction"],current["resource"]))):
+    #         self.result.append(current)
 
-    def testXL(self):
-        current = self.sequence.pop(0)
-        if(current["operation"].getOperationType() == "W" and (self.exclusive_lock(current["transaction"],current["resource"]))):
-            self.result.append(current)
+    # def testXL(self):
+    #     current = self.sequence.pop(0)
+    #     if(current["operation"].getOperationType() == "W" and (self.exclusive_lock(current["transaction"],current["resource"]))):
+    #         self.result.append(current)
     def validate_object(self, operation: Operation) -> Response: 
         """
         Validating Two Phase Locking With Wait-Die scheme

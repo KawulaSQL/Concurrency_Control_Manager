@@ -6,7 +6,7 @@ from typing import List
 class Transaction:
    TransactionCount: int = 0 
    txID: int = None 
-   txStatus: TransactionStatus = None 
+   txStatus: TransactionStatus = TransactionStatus.ACTIVE
    operationList: List[Operation] = [] 
    txTimestamp: datetime = None 
 

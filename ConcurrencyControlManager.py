@@ -1,4 +1,5 @@
 from models.TwoPhaseLockingv2 import TwoPhaseLockingv2
+from models.TwoPhaseLockingv3 import TwoPhaseLockingv3
 from models.TimeStampOrdering import TimestampOrdering
 from models.ControllerMethod import ControllerMethod
 from models.Schedule import Schedule
@@ -20,7 +21,7 @@ class ConcurrencyControlManager:
         if controller == "TSO":
             self.controller = TimestampOrdering()
         else:
-            self.controller = TwoPhaseLockingv2()  # Default to TwoPhaseLocking if not "MVCC"
+            self.controller = TwoPhaseLockingv3()
         
         self.schedule = Schedule()
         self.running = True
