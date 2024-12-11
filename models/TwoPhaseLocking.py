@@ -7,7 +7,11 @@ from CCManagerEnums import Action
 from ControllerMethod import ControllerMethod
 from Transaction import Transaction,Operation,Resource
 class TwoPhaseLocking(ControllerMethod, ABC):
-    def log_object(self, operation: Operation): 
+    def __init__(self):
+        self.schedule = Schedule()
+
+    def log_object(self, Operation: operation): 
+
         """
         locking object/resource
         """

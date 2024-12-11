@@ -3,82 +3,81 @@ from Resource import Resource
 from Transaction import Transaction
 from CCManagerEnums import LockType
 class Schedule:
-    transactionList: list[Transaction] # daftar transaksi
-    resourceList: set[Resource] # set of resource, behave like lock table
-    transactionWaitingList: list[Transaction]
     _instance = None
 
-    def __new__(cls, opQueue: list[Operation], resList: list[Resource], txList: list[Transaction]):
-        """Ensure only one instance of Schedule exists."""
+    def __new__(cls):
+        """
+        Ensure only one instance of Schedule exists.
+        """
         if cls._instance is None:
             cls._instance = super().__new__(cls)
-            cls._instance.operationQueue = opQueue
-            cls._instance.resourceList = resList
-            cls._instance.transactionList = txList
-            cls._instance.operationWaitingList = []
+            # Dictionary: {txID: Transaction object} for fast lookup by txID
+            cls._instance.resourceList = {}  # Dictionary: {resource_name: Resource object}
+            cls._instance.transactionList = {}  # Dictionary: {txID: Transaction object}
+            cls._instance.transactionWaitingList = {}  # Dictionary: {txID: Transaction object} for waiting transactions
         return cls._instance
 
-    def __init__(self, opQueue: list[Operation], resList: list[Resource], txList: list[Transaction]):
-        """Initialize the Schedule if it's the first time being created."""
-        # The __init__ method will only run when the instance is created for the first time.
+    def __init__(self):
+        """
+        Initialize the Schedule if it's the first time being created.
+        """
         pass
 
-    # Method getter
+    def get_or_create_resource(self, resource_name: str) -> Resource:
+        """
+        Check if a resource with the given name exists in resourceList.
+        If it exists, return the Resource object.
+        If not, create a new Resource, add it to resourceList, and return it.
+
+        :param resource_name: The name of the resource to find or create.
+        :return: The existing or newly created Resource object.
+        """
+        if resource_name in self.resourceList:
+            return self.resourceList[resource_name]
+        
+        new_resource = Resource(name=resource_name)
+        self.resourceList[resource_name] = new_resource
+        return new_resource
+
     def getTransactionList(self):
         return self.transactionList
     def getResourceList(self):
         return self.resourceList
-    def getOperationQueue(self):
-        return self.operationQueue
-    def getOperationWaitingList(self):
-        return self.operationWaitingList
-    def getTransactionById(self,targetid:int):
-        for transaction in self.transactionList:
-            if(transaction.getTransactionID() == targetid):
-                return transaction
-        return None
-    # Method setter
-    def setTransactionList(self, txList: list[Transaction]):
-        self.transactionList = txList
-    def setResourceList(self, resList: list[Resource]):
-        self.resourceList = resList
-    def setOperationQueue(self, opQueue: list[Operation]):
-        self.operationQueue = opQueue 
-    def setOperationWaitingList(self, opWaitingList: list[Operation]):
-        self.operationQueue = opWaitingList 
-
-    # Method tambahan
-    def addTransaction(self, tx: Transaction):
-        self.transactionList.append(tx)
-    def addResource(self, res: Resource):
-        self.resourceList.append(res)
-    def enqueueWaiting(self, op: Operation):
-        self.operationWaitingList.append(op)
-    def dequeueWaiting(self) -> Operation:
-        return self.operationWaitingList.pop(0)
-    def enqueue(self, op: Operation):
-        self.operationQueue.append(op)
-    def dequeue(self) -> Operation:
-        return self.operationList.pop(0)
+    def getTransactionWaitingList(self):
+        return self.transactionWaitingList
     
-    def setLockHolderList(self,lhList:list[{Transaction,LockType}]): #set lock holder list
-        self.__lockHolderList=lhList
+    def setTransactionList(self, txList: {}):
+        self.transactionList = txList
+    def setResourceList(self, resList: {}):
+        self.resourceList = resList
+    def setTransactionWaitingList(self, transactionWaitingList: {}):
+        self.transactionWaitingList = transactionWaitingList 
 
-    #Method Add dan Delete
-    def addLockHolder(self,transaction:Transaction,locktype:LockType): #tambah lock holder baru
-        self.__lockHolderList.append({transaction,locktype})
-    def deleteLockHolder(self,transaction:Transaction,locktype:LockType = None):
-        '''
-            hapus berdasarkan transaction dan locktype
-            jika locktype gak ada, hapus berdasarkan transaction aja
-        '''
-        if locktype: #hapus semua lock holder berdasarkan transaction dan locktype
-            self.__lockHolderList = [
-                lock for lock in self.__lockHolderList 
-                if not (lock['Transaction'] == transaction and lock['LockType'] == locktype)
-            ]
-        else: #hapus semua lock holder berdasarkan transaction
-            self.__lockHolderList = [
-                lock for lock in self.__lockHolderList 
-                if lock['Transaction'] != transaction
-            ]
+    def addTransaction(self, tx: Transaction):
+        """Add a transaction to the transactionList by txID."""
+        self.transactionList[tx.txID] = tx
+
+    def removeTransaction(self, tx: Transaction):
+        """Remove a transaction from the transactionList by txID."""
+        if tx.txID in self.transactionList:
+            del self.transactionList[tx.txID]
+
+    def addWaitingTransaction(self, tx: Transaction):
+        """Add a transaction to the transactionWaitingList by txID."""
+        self.transactionWaitingList[tx.txID] = tx
+
+    def removeWaitingTransaction(self, tx: Transaction):
+        """Remove a transaction from the transactionWaitingList by txID."""
+        if tx.txID in self.transactionWaitingList:
+            del self.transactionWaitingList[tx.txID]
+    
+    def getTransactionByID(self, txID: int):
+        """Retrieve a transaction by txID."""
+        return self.transactionList.get(txID, None)
+
+    def getWaitingTransaction(self, txID: int):
+        """Retrieve a waiting transaction by txID."""
+        return self.transactionWaitingList.get(txID, None)
+
+    def addResource(self, res: Resource):
+        self.resourceList[res.name] = res
