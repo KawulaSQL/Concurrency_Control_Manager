@@ -1,5 +1,7 @@
+from Operation import Operation
 from Resource import Resource
 from Transaction import Transaction
+from CCManagerEnums import LockType
 class Schedule:
     _instance = None
 

@@ -10,7 +10,7 @@ class ControllerMethod(ABC):
     """
 
     @abstractmethod
-    def log_object(self, operation: operation): 
+    def log_object(self, operation: Operation): 
         """
         Logs an operation involving a resource by a transaction. 
         Logs an object (Resource) on transaction <transaction_id>. 

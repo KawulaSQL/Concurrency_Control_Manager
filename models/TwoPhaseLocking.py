@@ -1,16 +1,17 @@
 from collections import defaultdict
 from abc import ABC
-from Resource import Resource
+
 from Response import Response
 from CCManagerEnums import Action
-from Operation import Operation
+
 from ControllerMethod import ControllerMethod
-from Transaction import Transaction
+from Transaction import Transaction,Operation,Resource
 class TwoPhaseLocking(ControllerMethod, ABC):
     def __init__(self):
         self.schedule = Schedule()
 
     def log_object(self, Operation: operation): 
+
         """
         locking object/resource
         """
