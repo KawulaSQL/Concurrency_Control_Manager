@@ -1,5 +1,5 @@
 from datetime import datetime
-from Transaction import Transaction
+# from Transaction import Transaction
 from CCManagerEnums import LockType, LockStatus
 
 class Resource:

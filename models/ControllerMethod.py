@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 
 from Resource import Resource
-from CCManagerEnums import Action
 from Response import Response,Operation
 
 class ControllerMethod(ABC):

@@ -6,7 +6,7 @@ class TwoPhaseLockingv2():
     def __init__(self, input_sequence: str):
         self.sequence = []
         self.timestamp = []
-        self.schedule = Schedule([],[],[])
+        self.schedule = Schedule()
         self.transactionIDSet = []
         self.exclusive_lock_table = {}
         self.shared_lock_table = defaultdict(list)
@@ -21,15 +21,17 @@ class TwoPhaseLockingv2():
                     #buat transaction baru jika belum pernah dibuat
                     newTx = None
                     if(int(entry[1]) not in self.transactionIDSet):
-                        newTx = Transaction(int(entry[1]))
-                        newTx.setValidationTS(int(entry[1])) #timestamp dari transaction
+                        newTx = Transaction()
                         self.schedule.addTransaction(newTx)
                         self.transactionIDSet.append(int(entry[1]))
-                    
-                    newRes = Resource(entry[3])
-                    newOp = Operation(entry[0],"",newRes,int(entry[1]))
+                        # txList = self.schedule.getTransactionList()
+                        # # for transaction in txList:
+                        # #     print(transaction.getTransactionID())
+                    newOp = Operation(int(entry[1]),entry[0],entry[3])
+                    print(newOp.getOperationResource(),newOp.getOpTransactionID())
+                    tx = self.schedule.getTransactionByID(int(entry[1]))
 
-                    tx = self.schedule.getTransactionById(int(entry[1]))
+                    print(tx.getTransactionID())
                     tx.addOperation(newOp)
                     
                     self.sequence.append({
@@ -40,8 +42,8 @@ class TwoPhaseLockingv2():
                     if int(entry[1]) not in self.timestamp:
                         self.timestamp.append(int(entry[1]))
                 elif entry[0] == 'C':
-                    newOp = Operation(entry[0],"",None,int(entry[1]))
-                    tx = self.schedule.getTransactionById(int(entry[1]))
+                    newOp = Operation(int(entry[1]),entry[0],"")
+                    tx = self.schedule.getTransactionByID(int(entry[1]))
                     tx.addOperation(newOp)
                     self.sequence.append({"operation": entry[0], "transaction": int(entry[1])})
                 else:
@@ -54,9 +56,11 @@ class TwoPhaseLockingv2():
 
             transactionList = self.schedule.getTransactionList()
 
-            for transaction in transactionList:
-                print("transaction id: ", transaction.getTransactionID())
-                transaction.printOperationList()
+            for txID  in transactionList:
+                print("transaction id: ", txID)
+                transactionList[txID].printOperationList()
+                
+                
         except ValueError as e:
             raise ValueError(f"Invalid input sequence: {e}")
         
