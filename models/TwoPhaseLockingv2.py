@@ -77,6 +77,7 @@ class TwoPhaseLockingv2():
             f"{entry['operation']} {entry['transaction']} {entry['table']} ({entry['status']})"
             for entry in self.transaction_history
         )
+        
 if __name__ == "__main__":
     print("1. Enter sequence")
     print("2. File Input")

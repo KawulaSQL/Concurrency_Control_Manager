@@ -8,13 +8,13 @@ class LockStatus(Enum):
     HOLDING = "Holding"
     WAITING = "Waiting"
 class OperationType(Enum):
-    R = "Read"
-    W = "Write"
+    R = "READ"
+    W = "WRITE"
+    C = "COMMIT"
+    A = "ABORT"
     SL = "Shared Lock"
     XL = "Exclusive Lock"
     UL = "Unlock"
-    C = "Commit"
-    A = "Abort"
 class OperationStatus(Enum):
     E = "Executed"
     NE = "Not Executed"

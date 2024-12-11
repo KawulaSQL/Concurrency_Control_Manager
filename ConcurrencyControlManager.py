@@ -11,19 +11,19 @@ import time
 class ConcurrencyControlManager:
     """Manages concurrency control for transactions."""
 
-    def __init__(self, controller="2PL"):
+    def __init__(self, controller="TSO"):
         """
         Initialize the ConcurrencyControlManager.
 
-        :param controller: A string to specify the concurrency control method ("2PL" or "MVCC").
+        :param controller: A string to specify the concurrency control method ("2PL" or "TSO").
                             Default is "2PL".
         """
         if controller == "TSO":
             self.controller = TimestampOrdering()
         else:
-            self.controller = TwoPhaseLocking()  # Default to TwoPhaseLocking if not "MVCC"
+            self.controller = TwoPhaseLocking()  # Default to TwoPhaseLocking if not "TSO"
         
-        self.schedule = Schedule(opQueue=[], resList=[], txList=[])
+        self.schedule = Schedule()
         self.running = True
 
     def begin_transaction(self) -> int:
@@ -41,7 +41,7 @@ class ConcurrencyControlManager:
         """
         Query processor call this function after getting validating operation can be run
         """
-        return self.controller.log_object
+        return self.controller.log_object(object)
 
     def validate_object(self, object: Operation) -> Response:
         """
@@ -59,5 +59,5 @@ class ConcurrencyControlManager:
         """
         self.controller.end_transaction(transaction_id)
 
-    def get_waiting_transaction(self):
+    def get_waiting_transactions(self):
         return self.schedule.getTransactionWaitingList

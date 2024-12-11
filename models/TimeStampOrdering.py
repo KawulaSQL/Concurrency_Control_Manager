@@ -1,8 +1,9 @@
-from ControllerMethod import ControllerMethod
-from Resource import Resource
-from CCManagerEnums import Action, ResponseType, OperationType, TransactionStatus
-from Response import Response
-from Operation import Operation
+from models.ControllerMethod import ControllerMethod
+from models.Resource import Resource
+from models.CCManagerEnums import ResponseType, OperationType, TransactionStatus
+from models.Response import Response
+from models.Operation import Operation
+from models.Schedule import Schedule
 from datetime import datetime
 
 class TimestampOrdering(ControllerMethod):
@@ -17,11 +18,11 @@ class TimestampOrdering(ControllerMethod):
         print(f"Validating operation to get resource: {operation.getOperationResource()}")
         
         # Creating/validating the Resource object of the requested resource name
-        operationResource = self.schedule.get_or_create_resource(operation.getOperationResource)
+        operationResource = self.schedule.get_or_create_resource(operation.getOperationResource())
         print(f"Operation resource: {operationResource.getName()}")
 
-        transaction = self.schedule.getTransactionByID(operation.getOpTransactionID)
-        print(f"Transaction retrieved: {transaction.txID}, Timestamp: {transaction.getTimestamp()}")
+        transaction = self.schedule.getTransactionByID(operation.getOpTransactionID())
+        print(f"Transaction retrieved: {transaction.getTransactionID()}, Timestamp: {transaction.getTimestamp()}")
 
         transaction.addOperation(operation)
 
@@ -35,12 +36,11 @@ class TimestampOrdering(ControllerMethod):
                 print("Transaction timestamp is after resource read timestamp. Transaction allowed.")
                 return Response(ResponseType.ALLOWED, operation)
         elif operation.getOperationType() == OperationType.W:
-            print("Operation type is WRITE.")
             if transaction.getTimestamp() < operationResource.getWTS() or transaction.getTimestamp() < operationResource.getRTS():
                 print("Transaction timestamp is earlier than resource timestamps. Transaction aborted.")
                 transaction.setTransactionStatus(TransactionStatus.ABORTED)
                 return Response(ResponseType.ABORT, operation)
-            print("Transaction timestamp is after resource read/writw timestamp. Transaction allowed.")
+            print("Transaction timestamp is after resource read/write timestamp. Transaction allowed.")
             return Response(ResponseType.ALLOWED, operation)
 
     def log_object(self, operation: Operation): 
@@ -49,8 +49,8 @@ class TimestampOrdering(ControllerMethod):
         """
         print(f"Logging operation for resource: {operation.getOperationResource()}")
         
-        transaction = self.schedule.getTransactionByID(operation.getOpTransactionID)
-        operationResource = self.schedule.get_or_create_resource(operation.getOperationResource)
+        transaction = self.schedule.getTransactionByID(operation.getOpTransactionID())
+        operationResource = self.schedule.get_or_create_resource(operation.getOperationResource())
 
         if operation.getOperationType() == OperationType.R:
             print(f"Setting resource read timestamp for {operationResource.getName()} to the timestamp of Transaction-{transaction.getTransactionID()}.")

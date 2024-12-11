@@ -1,6 +1,5 @@
 from datetime import datetime
-from Transaction import Transaction
-from CCManagerEnums import LockType, LockStatus
+from models.CCManagerEnums import LockType, LockStatus
 
 class Resource:
     def __init__(self, name: str, rts: datetime = None, wts: datetime = None):
@@ -14,7 +13,8 @@ class Resource:
         self.__name: str = name
         self.__rts: datetime = rts if rts is not None else datetime.now()
         self.__wts: datetime = wts if wts is not None else datetime.now()
-        self.__lockHolderList = []
+        self.__lockHolderList = [] #tuple of (transaction_id, LockType, LockStatus)
+        print(f"Resource created with RTS: {self.__rts}, WTS: {self.__wts}")
 
     def __eq__(self, other):
         """

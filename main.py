@@ -1,50 +1,67 @@
-import threading
-import time
-from models.Resource import Resource
-from models.CCManagerEnums import OperationType, OperationStatus
-from ConcurrencyControlManager import ConcurrencyControlManager,Operation
+from models.Schedule import Schedule
+from models.Transaction import Transaction
+from models.Operation import Operation
+from models.Response import Response
+from models.CCManagerEnums import OperationType, ResponseType, TransactionStatus
+from ConcurrencyControlManager import ConcurrencyControlManager
 
-def main():
-    # Initialize the ConcurrencyControlManager
-    ccm = ConcurrencyControlManager()
+class QueryProcessor:
+    def __init__(self):
+        """Initialize the Query Processor with a schedule instance."""
+        self.schedule = Schedule()
+        self.ccm = ConcurrencyControlManager()  # Assuming Concurrency Control Manager is initialized elsewhere
 
-    # Create Resources (assuming Resource class is defined somewhere)
-    resource_A = Resource("A")
-    resource_B = Resource("B")
-    resource_C = Resource("C")
-    resource_D = Resource("D")
+    def execute(self):
+        """Simulate processing queries."""
+        while True:
+            query = input("Enter query (or 'exit' to quit): ")
+            if query.lower() == 'exit':
+                break
 
-    # Transaction 1 - Operation list for transaction 1
-    operation_1_tx1 = Operation(OperationType.READ, "tx1", resource_A)
-    operation_2_tx1 = Operation(OperationType.WRITE, "tx1", resource_B)
-    operation_3_tx1 = Operation(OperationType.READ, "tx1", resource_C)
+            # Start a transaction for the query
+            transaction_id = self.ccm.begin_transaction()
+            print(f"Transaction {transaction_id} started.")
 
-    # Transaction 2 - Operation list for transaction 2
-    operation_1_tx2 = Operation(OperationType.WRITE, "tx2", resource_C)
-    operation_2_tx2 = Operation(OperationType.READ, "tx2", resource_D)
-    operation_3_tx2 = Operation(OperationType.READ, "tx2", resource_A)
+            # Parse query to create operations (simplified example)
+            operations = self.parse_query(query, transaction_id)
 
-    # List of operations for Transaction 1
-    operations_tx1 = [operation_1_tx1, operation_2_tx1, operation_3_tx1]
-    # List of operations for Transaction 2
-    operations_tx2 = [operation_1_tx2, operation_2_tx2, operation_3_tx2]
+            for operation in operations:
+                # Validate operation
+                response = self.ccm.validate_object(operation)
 
-    # Start Transaction 1 and Transaction 2
-    transaction_id_1 = ccm.begin_transaction(operations_tx1)
-    transaction_id_2 = ccm.begin_transaction(operations_tx2)
+                if response.responseType == ResponseType.ALLOWED:
+                    # Log operation
+                    self.ccm.log_object(response.operation)
+                    print(f"Operation {response.operation.getOperationID()} logged.")
 
-    # Start the concurrency control manager in a separate thread
-    thread = threading.Thread(target=ccm.run)
-    thread.start()
+                elif response.responseType == ResponseType.WAIT:
+                    print(f"Operation {operation.getOperationID()} is waiting.")
+                    continue
 
-    # Simulate the process for a while
-    time.sleep(5)  # Let it process the transactions
+                elif response.responseType == ResponseType.ABORT:
+                    print(f"Transaction {transaction_id} aborted.")
+                    self.ccm.end_transaction(transaction_id)
+                    return
 
-    # Stop the concurrency control manager gracefully
-    ccm.stop()
+            # End transaction if all operations are successful
+            self.ccm.end_transaction(transaction_id)
+            print(f"Transaction {transaction_id} ended successfully.")
 
-    # Wait for the thread to finish
-    thread.join()
+    def parse_query(self, query: str, transaction_id: int):
+        """Parse a query string into operations (simplified for demonstration)."""
+        operations = []
+        for part in query.split(','):
+            resource_name, op_type = part.strip().split()
+            print(resource_name)
+            print(op_type)
+            operation = Operation(
+                transactionID=transaction_id,
+                typeOp=OperationType[op_type.upper()],
+                res=resource_name
+            )
+            operations.append(operation)
+        return operations
 
 if __name__ == "__main__":
-    main()
+    qp = QueryProcessor()
+    qp.execute()

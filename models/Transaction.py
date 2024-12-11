@@ -1,5 +1,5 @@
-from Operation import Operation
-from CCManagerEnums import TransactionStatus
+from models.Operation import Operation
+from models.CCManagerEnums import TransactionStatus
 from datetime import datetime
 from typing import List 
 
@@ -49,7 +49,7 @@ class Transaction:
       self.txID = ID
    def setTransactionStatus(self, status:TransactionStatus):
       self.txStatus = status
-   def setOperationList(self, ol: list[Operation] = None):
+   def setOperationList(self, ol: {}):
       self.operationList = ol
    def setTimestamp(self,newTS:datetime):
       self.txTimestamp = newTS

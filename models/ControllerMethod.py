@@ -1,8 +1,7 @@
 from abc import ABC, abstractmethod
 
-from Resource import Resource
-from CCManagerEnums import Action
-from Response import Response,Operation
+from models.Resource import Resource
+from models.Response import Response,Operation
 
 class ControllerMethod(ABC):
     """
@@ -10,7 +9,7 @@ class ControllerMethod(ABC):
     """
 
     @abstractmethod
-    def log_object(self, operation: operation): 
+    def log_object(self, operation: Operation): 
         """
         Logs an operation involving a resource by a transaction. 
         Logs an object (Resource) on transaction <transaction_id>. 

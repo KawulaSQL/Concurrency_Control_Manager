@@ -1,5 +1,6 @@
-from Resource import Resource
-from Transaction import Transaction
+from models.Resource import Resource
+from models.Transaction import Transaction
+from datetime import datetime, time
 class Schedule:
     _instance = None
 
@@ -9,9 +10,8 @@ class Schedule:
         """
         if cls._instance is None:
             cls._instance = super().__new__(cls)
-            # Dictionary: {txID: Transaction object} for fast lookup by txID
             cls._instance.resourceList = {}  # Dictionary: {resource_name: Resource object}
-            cls._instance.transactionList = {}  # Dictionary: {txID: Transaction object}
+            cls._instance.transactionList = {}  # Dictionary: {txID: Transaction object} for fast lookup by txID
             cls._instance.transactionWaitingList = {}  # Dictionary: {txID: Transaction object} for waiting transactions
         return cls._instance
 
@@ -33,7 +33,8 @@ class Schedule:
         if resource_name in self.resourceList:
             return self.resourceList[resource_name]
         
-        new_resource = Resource(name=resource_name)
+        start_of_day = datetime.combine(datetime.now().date(), time.min)
+        new_resource = Resource(name=resource_name, rts=start_of_day, wts=start_of_day)
         self.resourceList[resource_name] = new_resource
         return new_resource
 
