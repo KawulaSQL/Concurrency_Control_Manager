@@ -28,10 +28,9 @@ class TwoPhaseLockingv2():
                         # # for transaction in txList:
                         # #     print(transaction.getTransactionID())
                     newOp = Operation(int(entry[1]),entry[0],entry[3])
-                    print(newOp.getOperationResource(),newOp.getOpTransactionID())
                     tx = self.schedule.getTransactionByID(int(entry[1]))
 
-                    print(tx.getTransactionID())
+                
                     tx.addOperation(newOp)
                     
                     self.sequence.append({
@@ -50,15 +49,15 @@ class TwoPhaseLockingv2():
                     raise ValueError("Invalid operation detected.")
                 
             # Ensure each transaction has a commit
-            if len([x for x in self.sequence if x["operation"] == 'C']) != len(set(self.timestamp)):
+            if len([x for x in self.sequence if x["operation"].getOperationType() == 'C']) != len(set(self.timestamp)):
                 raise ValueError("Each transaction must have a commit operation.")
             # print(self.sequence)
 
-            transactionList = self.schedule.getTransactionList()
+            # transactionList = self.schedule.getTransactionList()
 
-            for txID  in transactionList:
-                print("transaction id: ", txID)
-                transactionList[txID].printOperationList()
+            # # for txID  in transactionList:
+            # #     print("transaction id: ", txID)
+            # #     transactionList[txID].printOperationList()
                 
                 
         except ValueError as e:
@@ -81,53 +80,58 @@ class TwoPhaseLockingv2():
             f"{entry['operation']} {entry['transaction']} {entry['table']} ({entry['status']})"
             for entry in self.transaction_history
         )
-    def shared_lock(self, transaction: int, resource: str) -> bool:
+    def shared_lock(self, transaction: Transaction, resource: str) -> bool:
         """Acquire a shared lock."""
-        if resource in self.exclusive_lock_table:
-            if self.exclusive_lock_table[resource] == transaction:
-                return True 
-            return False
-        if transaction in self.shared_lock_table[resource]:
+        if resource in self.exclusive_lock_table: #jika resource sudah dilock sama exclusive lock
+            if self.exclusive_lock_table[resource] == transaction.getTransactionID(): #jika exclusive lock melock resource di transaksi yang sama
+                return True  #lock granted
+            return False #lock gagal granted, masuk ke skema deadlock prevention
+        if transaction.getTransactionID() in self.shared_lock_table[resource]:#jika resource sudah dilock sama shared lock dimanapun posisinya, keynya juga granted
             return True 
-        print("append lock table")
-        self.shared_lock_table[resource].append(transaction)
-        self.log_transaction(transaction, resource, "SL", "Success")
+        
+        #grant shared lock baru ke resource
+        self.shared_lock_table[resource].append(transaction.getTransactionID())
+        self.log_transaction(transaction.getTransactionID(), resource, "SL", "Success")
         return True
 
-    def exclusive_lock(self, transaction: int, resource: str) -> bool:
+    def exclusive_lock(self, transaction: Transaction, resource: str) -> bool:
         """Acquire an exclusive lock."""
-        if resource in self.shared_lock_table:
-            if transaction in self.shared_lock_table[resource] and len(self.shared_lock_table[resource]) == 1:
-                self.shared_lock_table[resource].remove(transaction)
-                self.exclusive_lock_table[resource] = transaction
-                self.log_transaction(transaction, resource, "UPL", "Success")
+        if resource in self.shared_lock_table: #jika resource ada di shared_lock_table
+            if transaction.getTransactionID() in self.shared_lock_table[resource] and len(self.shared_lock_table[resource]) == 1:
+                #jika resource udah pernah di shared lock dengan transaction yang sama dan transaction itu satu satunya yang pernah shared lock
+                #upgrade key dari shared lock ke exclusive lock
+                self.shared_lock_table[resource].remove(transaction.getTransactionID())
+                self.exclusive_lock_table[resource] = transaction.getTransactionID()
+                self.log_transaction(transaction.getTransactionID(), resource, "UPL", "Success")
                 return True
             return False
-        if resource in self.exclusive_lock_table:
-            return self.exclusive_lock_table[resource] == transaction
-        self.exclusive_lock_table[resource] = transaction
-        self.log_transaction(transaction, resource, "XL", "Success")
+        if resource in self.exclusive_lock_table: # jika resource sudah pernah dilock oleh exclusive lock
+            return self.exclusive_lock_table[resource] == transaction.getTransactionID() 
+            #granted jika di exclusive lock oleh transaksi yang sama
+            #grant gagal jika transaksi yang exclusive lock beda
+        #grant exclusive lock baru ke resource
+        self.exclusive_lock_table[resource] = transaction.getTransactionID()
+        self.log_transaction(transaction.getTransactionID(), resource, "XL", "Success")
         return True
     
     def testSL(self):
         current = self.sequence.pop(0)
-        print(current)
-        if(current["operation"] == "R" and (self.shared_lock(current["transaction"],current["table"]))):
+        if(current["operation"].getOperationType() == "R" and (self.shared_lock(current["transaction"],current["resource"]))):
             self.result.append(current)
 
     def testXL(self):
         current = self.sequence.pop(0)
-        print(current)
-        if(current["operation"] == "W" and (self.exclusive_lock(current["transaction"],current["table"]))):
+        if(current["operation"].getOperationType() == "W" and (self.exclusive_lock(current["transaction"],current["resource"]))):
             self.result.append(current)
 
-        
+
+#main di bawah cuma buat testing 
 if __name__ == "__main__":
     print("1. Enter sequence")
     print("2. File Input")
     input_choice = input("Enter your option (1 or 2): ")
     
-    if (input_choice == 1):
+    if (input_choice == "1"):
         input_seq = input("Enter sequence (delimited by ';'): ")
     elif input_choice == "2":
         file_name = input("Enter file name: ")
@@ -144,13 +148,17 @@ if __name__ == "__main__":
 
     try:
         tpl = TwoPhaseLockingv2(input_seq)
-        print(tpl.sequence)
+        i = 1
+        for seq in tpl.sequence:
+            print(f"sequence ke: {i}")
+            seq["operation"].printOperation()
+            print("transaction ke-",seq["transaction"].getTransactionID())
+            seq["transaction"].printOperationList()
+            i+=1
+
         tpl.testSL()
+        print(tpl.transaction_history)
         tpl.testXL()
         print(tpl.transaction_history)
-        print(tpl.shared_lock_table)
-        print(tpl.exclusive_lock_table)
-        tpl.history_string()
-        # tpl.result_string()
     except Exception as e:
         print(f"Error: {e}")
