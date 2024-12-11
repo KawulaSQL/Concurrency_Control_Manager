@@ -73,18 +73,4 @@ class Transaction:
    def addExclusiveLock(self,sl:Resource): #tambah resource exclusive lock ke list
       self.exclusiveLockList.append(sl)
 
-   def markStartTS(self): #update start timestamp
-      self.startTS = datetime.now()
 
-   def markFinishTS(self): #update finish timestamp
-      self.finishTS = datetime.now()
-
-   def markValidationTS(self): #update validation timestamp
-      self.valTS = datetime.now()
-
-   def abort(self): #abort transaction
-      self.startTS = datetime.max
-      self.finishTS = datetime.max
-      self.valTS = datetime.max
-   #  self.readSet=[]
-   #  self.writeSet=[]
