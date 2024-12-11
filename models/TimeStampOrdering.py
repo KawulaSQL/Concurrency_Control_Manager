@@ -31,9 +31,9 @@ class TimestampOrdering(ControllerMethod):
                 print("Transaction timestamp is earlier than resource write timestamp. Transaction aborted.")
                 transaction.setTransactionStatus(TransactionStatus.ABORTED)
                 return Response(ResponseType.ABORT, operation)
-
-            if transaction.getTimestamp() > operationResource.getRTS():
+            else:
                 print("Transaction timestamp is after resource read timestamp. Transaction allowed.")
+                self.log_object(operation)
                 return Response(ResponseType.ALLOWED, operation)
         elif operation.getOperationType() == OperationType.W:
             if transaction.getTimestamp() < operationResource.getWTS() or transaction.getTimestamp() < operationResource.getRTS():
@@ -41,6 +41,7 @@ class TimestampOrdering(ControllerMethod):
                 transaction.setTransactionStatus(TransactionStatus.ABORTED)
                 return Response(ResponseType.ABORT, operation)
             print("Transaction timestamp is after resource read/write timestamp. Transaction allowed.")
+            self.log_object(operation)
             return Response(ResponseType.ALLOWED, operation)
 
     def log_object(self, operation: Operation): 
