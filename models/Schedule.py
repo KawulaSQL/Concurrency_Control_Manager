@@ -79,26 +79,3 @@ class Schedule:
 
     def addResource(self, res: Resource):
         self.resourceList[res.name] = res
-
-    
-    def setLockHolderList(self,lhList:list[{Transaction,LockType}]): #set lock holder list
-        self.__lockHolderList=lhList
-
-    #Method Add dan Delete
-    def addLockHolder(self,transaction:Transaction,locktype:LockType): #tambah lock holder baru
-        self.__lockHolderList.append({transaction,locktype})
-    def deleteLockHolder(self,transaction:Transaction,locktype:LockType = None):
-        '''
-            hapus berdasarkan transaction dan locktype
-            jika locktype gak ada, hapus berdasarkan transaction aja
-        '''
-        if locktype: #hapus semua lock holder berdasarkan transaction dan locktype
-            self.__lockHolderList = [
-                lock for lock in self.__lockHolderList 
-                if not (lock['Transaction'] == transaction and lock['LockType'] == locktype)
-            ]
-        else: #hapus semua lock holder berdasarkan transaction
-            self.__lockHolderList = [
-                lock for lock in self.__lockHolderList 
-                if lock['Transaction'] != transaction
-            ]

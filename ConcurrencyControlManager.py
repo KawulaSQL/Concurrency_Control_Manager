@@ -26,7 +26,7 @@ class ConcurrencyControlManager:
         self.schedule = Schedule(opQueue=[], resList=[], txList=[])
         self.running = True
 
-    def begin_transaction() -> int:
+    def begin_transaction(self) -> int:
         """
         Start a new transaction. This will give the new Query (queries) transaction id 
         and construct a new Transaction object. When query processor send the transactional or non-transactional queries to be processed, 
@@ -58,5 +58,6 @@ class ConcurrencyControlManager:
         :param transaction_id: The ID of the transaction to end.
         """
         self.controller.end_transaction(transaction_id)
-        transaction.setTransactionStatus(TransactionStatus.TERMINATED) #Choose between below or this
-        print(f"Transaction with ID {transaction.getTransactionID} is terminated.")
+
+    def get_waiting_transaction(self):
+        return self.schedule.getTransactionWaitingList

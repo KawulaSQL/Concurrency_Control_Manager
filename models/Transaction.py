@@ -25,14 +25,14 @@ class Transaction:
       Check equality based on transaction ID.
       """
       if isinstance(other, Transaction):
-            return self.tx_id == other.tx_id
+            return self.txID == other.getTransactionID
       return False
 
    def __hash__(self):
       """
       Generate hash based on transaction ID.
       """
-      return hash(self.tx_id)
+      return hash(self.txID)
 
    #METHOD GETTER
    def getTransactionID(self):
@@ -41,10 +41,6 @@ class Transaction:
       return self.txStatus
    def getOperationList(self):
       return self.operationList
-   def getSharedLockList(self):
-      return self.sharedLockList
-   def getExclusiveLockList(self):
-      return self.exclusiveLockList
    def getTimestamp(self):
       return self.txTimestamp
 
@@ -55,10 +51,6 @@ class Transaction:
       self.txStatus = status
    def setOperationList(self, ol: list[Operation] = None):
       self.operationList = ol
-   def setSharedLockList(self, sl: list[Resource] = None):
-      self.sharedLockList = sl
-   def setExclusiveLockList(self, xl: list[Resource] = None):
-      self.exclusiveLockList = xl
    def setTimestamp(self,newTS:datetime):
       self.txTimestamp = newTS
 
@@ -66,11 +58,3 @@ class Transaction:
       if op not in self.operationList:
          op.setOperationID(len(self.operationList) + 1)
          self.operationList.append(op)
-
-   def addSharedLock(self,sl:Resource): #tambah resource shared lockk ke list
-      self.sharedLockList.append(sl)
-
-   def addExclusiveLock(self,sl:Resource): #tambah resource exclusive lock ke list
-      self.exclusiveLockList.append(sl)
-
-

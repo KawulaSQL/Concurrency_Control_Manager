@@ -39,7 +39,7 @@ class Operation:
     def setOperationID(self, opID: int):
         self.operationID = opID
 
-    def setOperationResource(self,res:Resource): #set resource dari operasi
+    def setOperationResource(self,res:str): #set resource dari operasi
         self.__opResource = res 
 
     def setOperationType(self,typeOp:OperationType): #set tipe operasi
