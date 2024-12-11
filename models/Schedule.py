@@ -1,5 +1,7 @@
 from models.Resource import Resource
 from models.Transaction import Transaction
+from models.Operation import Operation
+from models.CCManagerEnums import LockType
 from datetime import datetime, time
 class Schedule:
     _instance = None

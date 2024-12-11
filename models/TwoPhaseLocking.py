@@ -9,7 +9,7 @@ class TwoPhaseLocking(ControllerMethod, ABC):
     def __init__(self):
         self.schedule = Schedule()
 
-    def log_object(self, operation: Operation): 
+    def log_object(self, Operation: operation): 
         """
         locking object/resource
         """
