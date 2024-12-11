@@ -105,9 +105,9 @@ class TwoPhaseLockingv2(ControllerMethod):
                 self.shared_lock_table[resource].remove(transaction.getTransactionID())
 
         #release exclusive lock semua resource yang dilock oleh transaction ke-transactionID
-        for resource in self.exclusive_lock_table:
-            if(transaction.getTransactionID() == self.exclusive_lock_table[resource]):
-                self.exclusive_lock_table.pop()
+        for resource in list(self.exclusive_lock_table.keys()):  
+            if transaction.getTransactionID() == self.exclusive_lock_table[resource]:
+                self.exclusive_lock_table.pop(resource)
 
     def exclusive_lock(self, transaction: Transaction, resource: str) -> bool:
         """Acquire an exclusive lock."""
@@ -229,7 +229,7 @@ class TwoPhaseLockingv2(ControllerMethod):
                 else: #lock holder idnya lebih kecil (transaksi lebih tua memegang lock dan lock requester lebih muda dari lock holder)
                     #aktifkan protokol DIE
                     print(f"Younger transaction {lockRequesterID} requested shared lock from older transaction {lockHolderID}. Transaction {lockRequesterID} is aborted.")
-                    transaction.setTranscationStatus(TransactionStatus.ABORTED)
+                    transaction.setTransactionStatus(TransactionStatus.ABORTED)
                     #unlock semua resource yang dipegang oleh transaction setelah abort
                     self.release_locks(transaction)
                     return Response(ResponseType.ABORT, operation)
