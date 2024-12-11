@@ -25,6 +25,7 @@ class TransactionStatus(Enum):
     FAILED = "Failed"
     ABORTED = "Aborted"
     TERMINATED = "Terminated"
+    WAITING = "Waiting"
 class ResponseType(Enum):
     ALLOWED = 'Allowed'
     WAITING = 'Waiting'

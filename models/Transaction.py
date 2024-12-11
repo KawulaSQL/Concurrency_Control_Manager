@@ -1,5 +1,5 @@
-from Operation import Operation
-from CCManagerEnums import TransactionStatus
+from models.Operation import Operation
+from models.CCManagerEnums import TransactionStatus
 from datetime import datetime
 from typing import List 
 

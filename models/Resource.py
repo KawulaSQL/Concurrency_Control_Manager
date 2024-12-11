@@ -1,6 +1,6 @@
 from datetime import datetime
 # from Transaction import Transaction
-from CCManagerEnums import LockType, LockStatus
+from models.CCManagerEnums import LockType, LockStatus
 
 class Resource:
     def __init__(self, name: str, rts: datetime = None, wts: datetime = None):

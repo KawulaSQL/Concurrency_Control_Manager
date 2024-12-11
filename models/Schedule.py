@@ -1,7 +1,7 @@
-from Operation import Operation
-from Resource import Resource
-from Transaction import Transaction
-from CCManagerEnums import LockType
+from models.Operation import Operation
+from models.Resource import Resource
+from models.Transaction import Transaction
+from models.CCManagerEnums import LockType
 class Schedule:
     _instance = None
 

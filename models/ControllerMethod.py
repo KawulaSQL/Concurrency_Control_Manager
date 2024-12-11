@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
-from Resource import Resource
-from Response import Response,Operation
+from models.Resource import Resource
+from models.Response import Response,Operation
 
 class ControllerMethod(ABC):
     """

@@ -1,9 +1,11 @@
 from abc import ABC
 from collections import defaultdict
-from ControllerMethod import ControllerMethod
-from Schedule import Schedule,Transaction,Operation,Resource
-class TwoPhaseLockingv2():
-    def __init__(self, input_sequence: str):
+from models.ControllerMethod import ControllerMethod
+from models.Schedule import Schedule,Transaction,Operation,Resource
+from models.CCManagerEnums import ResponseType, OperationType, TransactionStatus
+from models.Response import Response
+class TwoPhaseLockingv2(ControllerMethod):
+    def __init__(self):
         self.sequence = []
         self.timestamp = []
         self.schedule = Schedule()
@@ -12,45 +14,46 @@ class TwoPhaseLockingv2():
         self.shared_lock_table = defaultdict(list)
         self.transaction_history = []
         self.result = []
+        self.wait_sequence = [] #semua sequence yang masuk ke wait
      # Parse input sequence
-        try:
-            input_sequence = input_sequence.rstrip(";").split(";")
-            for entry in input_sequence:
-                entry = entry.strip()
-                if entry[0] in {'R', 'W'}:
-                    #buat transaction baru jika belum pernah dibuat
-                    newTx = None
-                    if(int(entry[1]) not in self.transactionIDSet):
-                        newTx = Transaction()
-                        self.schedule.addTransaction(newTx)
-                        self.transactionIDSet.append(int(entry[1]))
-                        # txList = self.schedule.getTransactionList()
-                        # # for transaction in txList:
-                        # #     print(transaction.getTransactionID())
-                    newOp = Operation(int(entry[1]),entry[0],entry[3])
-                    tx = self.schedule.getTransactionByID(int(entry[1]))
+        # try:
+        #     input_sequence = input_sequence.rstrip(";").split(";")
+        #     for entry in input_sequence:
+        #         entry = entry.strip()
+        #         if entry[0] in {'R', 'W'}:
+        #             #buat transaction baru jika belum pernah dibuat
+        #             newTx = None
+        #             if(int(entry[1]) not in self.transactionIDSet):
+        #                 newTx = Transaction()
+        #                 self.schedule.addTransaction(newTx)
+        #                 self.transactionIDSet.append(int(entry[1]))
+        #                 # txList = self.schedule.getTransactionList()
+        #                 # # for transaction in txList:
+        #                 # #     print(transaction.getTransactionID())
+        #             newOp = Operation(int(entry[1]),entry[0],entry[3])
+        #             tx = self.schedule.getTransactionByID(int(entry[1]))
 
                 
-                    tx.addOperation(newOp)
+        #             tx.addOperation(newOp)
                     
-                    self.sequence.append({
-                        "operation": newOp,
-                        "transaction": tx,
-                        "resource": entry[3]
-                    })
-                    if int(entry[1]) not in self.timestamp:
-                        self.timestamp.append(int(entry[1]))
-                elif entry[0] == 'C':
-                    newOp = Operation(int(entry[1]),entry[0],"")
-                    tx = self.schedule.getTransactionByID(int(entry[1]))
-                    tx.addOperation(newOp)
-                    self.sequence.append({"operation": newOp, "transaction": tx})
-                else:
-                    raise ValueError("Invalid operation detected.")
+        #             self.sequence.append({
+        #                 "operation": newOp,
+        #                 "transaction": tx,
+        #                 "resource": entry[3]
+        #             })
+        #             if int(entry[1]) not in self.timestamp:
+        #                 self.timestamp.append(int(entry[1]))
+        #         elif entry[0] == 'C':
+        #             newOp = Operation(int(entry[1]),entry[0],"")
+        #             tx = self.schedule.getTransactionByID(int(entry[1]))
+        #             tx.addOperation(newOp)
+        #             self.sequence.append({"operation": newOp, "transaction": tx})
+        #         else:
+        #             raise ValueError("Invalid operation detected.")
                 
-            # Ensure each transaction has a commit
-            if len([x for x in self.sequence if x["operation"].getOperationType() == 'C']) != len(set(self.timestamp)):
-                raise ValueError("Each transaction must have a commit operation.")
+        #     # Ensure each transaction has a commit
+        #     if len([x for x in self.sequence if x["operation"].getOperationType() == 'C']) != len(set(self.timestamp)):
+        #         raise ValueError("Each transaction must have a commit operation.")
             # print(self.sequence)
 
             # transactionList = self.schedule.getTransactionList()
@@ -60,8 +63,8 @@ class TwoPhaseLockingv2():
             # #     transactionList[txID].printOperationList()
                 
                 
-        except ValueError as e:
-            raise ValueError(f"Invalid input sequence: {e}")
+        # except ValueError as e:
+        #     raise ValueError(f"Invalid input sequence: {e}")
         
     def log_transaction(self, transaction, table, operation, status):
         """Log transaction operations."""
@@ -93,6 +96,18 @@ class TwoPhaseLockingv2():
         self.shared_lock_table[resource].append(transaction.getTransactionID())
         self.log_transaction(transaction.getTransactionID(), resource, "SL", "Success")
         return True
+    def release_locks(self, transaction:Transaction):
+        #release semua resource dari transaction 
+
+        #release shared lock semua resource yang dilock oleh transaction ke-transactionID
+        for resource in self.shared_lock_table:
+            if (transaction.getTransactionID() in self.shared_lock_table[resource]):
+                self.shared_lock_table[resource].remove(transaction.getTransactionID())
+
+        #release exclusive lock semua resource yang dilock oleh transaction ke-transactionID
+        for resource in self.exclusive_lock_table:
+            if(transaction.getTransactionID() == self.exclusive_lock_table[resource]):
+                self.exclusive_lock_table.pop()
 
     def exclusive_lock(self, transaction: Transaction, resource: str) -> bool:
         """Acquire an exclusive lock."""
@@ -151,6 +166,97 @@ class TwoPhaseLockingv2():
         current = self.sequence.pop(0)
         if(current["operation"].getOperationType() == "W" and (self.exclusive_lock(current["transaction"],current["resource"]))):
             self.result.append(current)
+    def validate_object(self, operation: Operation) -> Response: 
+        """
+        Validating Two Phase Locking With Wait-Die scheme
+        """
+        print(f"Validating operation to get resource: {operation.getOperationResource()}")
+        operationResource = self.schedule.get_or_create_resource(operation.getOperationResource())
+        print(f"Operation resource: {operationResource.getName()}")
+
+        transaction = self.schedule.getTransactionByID(operation.getOpTransactionID())
+
+        print(f"Transaction retrieved ID: {transaction.getTransactionID()}")
+
+        transaction.addOperation(operation)
+        # self.sequence.append({
+        #     "operation": operation,
+        #     "transaction": transaction,
+        #     "resource": operationResource
+        # })
+        
+        if (operation.getOperationType() == OperationType.R): # read: minta shared lock
+            if(self.shared_lock(transaction,operationResource)): #shared lock granted
+                print(f"Resource {operationResource.getName()} has shared lock granted on transaction {transaction.getTransactionID()}. Transaction Allowed")
+                return Response(ResponseType.ALLOWED, operation)
+            else: #tidak granted, wait die
+                #syarat aktivasi protokol wait die untuk read: resource dilock pake exclusive lock di transaction berbeda
+                print(f"Shared lock grant for resource {operationResource} failed.")
+                lockHolderID = self.exclusive_lock_table[operationResource]
+                lockRequesterID = transaction.getTransactionID()
+
+                if(lockHolderID > lockRequesterID): #lock holder idnya lebih besar (transaksi lebih muda melock resource tersebut dan lock direquest oleh transaksi yang lebih tua)
+                    #aktifkan protokol WAIT
+                    print(f"Older transaction {lockRequesterID} requested shared lock from younger transaction {lockHolderID}. Transaction {lockRequesterID} is now waiting.")
+                    transaction.setTransactionStatus(TransactionStatus.WAITING)
+                    self.wait_sequence.append(operation)
+                    return Response(ResponseType.WAITING, operation)
+                else: #lock holder idnya lebih kecil (transaksi lebih tua memegang lock dan lock requester lebih muda dari lock holder)
+                    #aktifkan protokol DIE
+                    print(f"Younger transaction {lockRequesterID} requested shared lock from older transaction {lockHolderID}. Transaction {lockRequesterID} is aborted.")
+                    transaction.setTranscationStatus(TransactionStatus.ABORTED)
+                    #unlock semua resource yang dipegang oleh transaction setelah abort
+                    self.release_locks(transaction)
+                    return Response(ResponseType.ABORT, operation)
+
+        elif (operation.getOperationType() == OperationType.W): #write: minta exclusive lock
+            if(self.exclusive_lock(transaction,operationResource)): #exclusive lock berhasil granted
+                print(f"Resource {operationResource} has exclusive lock granted. Transaction allowed")
+                return Response(ResponseType.ALLOWED, operation)
+            else: #grant exclusive lock gagal
+                #syarat aktivasi protokol wait die untuk write: resource dilock pake exclusive lock di transaction berbeda
+                #atau shared lock
+                print(f"Exclusive lock grant for resource {operationResource} failed.")
+                lockHolderID = self.exclusive_lock_table[operationResource] if self.exclusive_lock_table[operationResource] else self.shared_lock_table[operationResource][len(self.shared_lock_table[operationResource]) - 1]
+                #asumsi lockholderid adalah transaksi terakhir yang melakukan grant shared lock ke resource tersebut
+                lockRequesterID = transaction.getTransactionID()
+
+                if(lockHolderID > lockRequesterID): #lock holder idnya lebih besar (transaksi lebih muda melock resource tersebut dan lock direquest oleh transaksi yang lebih tua)
+                    #aktifkan protokol WAIT
+                    print(f"Older transaction {lockRequesterID} requested shared lock from younger transaction {lockHolderID}. Transaction {lockRequesterID} is now waiting.")
+                    transaction.setTransactionStatus(TransactionStatus.WAITING)
+                    return Response(ResponseType.WAITING, operation)
+                else: #lock holder idnya lebih kecil (transaksi lebih tua memegang lock dan lock requester lebih muda dari lock holder)
+                    #aktifkan protokol DIE
+                    print(f"Younger transaction {lockRequesterID} requested shared lock from older transaction {lockHolderID}. Transaction {lockRequesterID} is aborted.")
+                    transaction.setTranscationStatus(TransactionStatus.ABORTED)
+                    #unlock semua resource yang dipegang oleh transaction setelah abort
+                    self.release_locks(transaction)
+                    return Response(ResponseType.ABORT, operation)
+
+        else: #commit: unlock semua lock yang dihold oleh transaction
+            transaction.setTransactionStatus(TransactionStatus.COMMITTED)
+            self.release_locks(transaction)
+            return Response(ResponseType.ALLOWED, operation)
+        
+
+    def log_object(self, operation: Operation): 
+        print(f"Logging operation for resource: {operation.getOperationResource()}")
+        print(f"Shared Lock List: ", self.shared_lock_table)
+        print(f"Exclusive Lock List: ", self.exclusive_lock_table)
+
+    def end_transaction(self, transaction_id: int):
+        print(f"Ending transaction {transaction_id}.")
+        
+        transaction = self.schedule.getTransactionByID(transaction_id)
+
+        if transaction.getTransactionStatus() == TransactionStatus.ABORTED:
+            print(f"Transaction {transaction_id} aborted, adding to waiting list.")
+            self.schedule.addWaitingTransaction(transaction)
+
+        self.schedule.removeTransaction(transaction)
+        transaction.setTransactionStatus(TransactionStatus.TERMINATED)
+        print(f"Transaction {transaction_id} removed and terminated.")
 
 
 #main di bawah cuma buat testing 

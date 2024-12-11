@@ -1,4 +1,4 @@
-from models.TwoPhaseLocking import TwoPhaseLocking
+from models.TwoPhaseLockingv2 import TwoPhaseLockingv2
 from models.TimeStampOrdering import TimestampOrdering
 from models.ControllerMethod import ControllerMethod
 from models.Schedule import Schedule
@@ -21,9 +21,9 @@ class ConcurrencyControlManager:
         if controller == "TSO":
             self.controller = TimestampOrdering()
         else:
-            self.controller = TwoPhaseLocking()  # Default to TwoPhaseLocking if not "MVCC"
+            self.controller = TwoPhaseLockingv2()  # Default to TwoPhaseLocking if not "MVCC"
         
-        self.schedule = Schedule(opQueue=[], resList=[], txList=[])
+        self.schedule = Schedule()
         self.running = True
 
     def begin_transaction(self) -> int:
@@ -41,7 +41,7 @@ class ConcurrencyControlManager:
         """
         Query processor call this function after getting validating operation can be run
         """
-        return self.controller.log_object
+        return self.controller.log_object(object)
 
     def validate_object(self, object: Operation) -> Response:
         """

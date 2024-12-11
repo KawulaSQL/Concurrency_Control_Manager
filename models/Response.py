@@ -1,6 +1,6 @@
 from dataclasses import dataclass
-from Operation import Operation
-from CCManagerEnums import ResponseType
+from models.Operation import Operation
+from models.CCManagerEnums import ResponseType
 
 @dataclass
 class Response:
