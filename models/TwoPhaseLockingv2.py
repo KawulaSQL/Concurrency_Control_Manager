@@ -8,7 +8,7 @@ class TwoPhaseLockingv2():
         self.timestamp = []
         self.schedule = Schedule()
         self.transactionIDSet = []
-        self.exclusive_lock_table = {}
+        self.exclusive_lock_table = defaultdict()
         self.shared_lock_table = defaultdict(list)
         self.transaction_history = []
         self.result = []
@@ -35,9 +35,9 @@ class TwoPhaseLockingv2():
                     tx.addOperation(newOp)
                     
                     self.sequence.append({
-                        "operation": entry[0],
-                        "transaction": int(entry[1]),
-                        "table": entry[3]
+                        "operation": newOp,
+                        "transaction": tx,
+                        "resource": entry[3]
                     })
                     if int(entry[1]) not in self.timestamp:
                         self.timestamp.append(int(entry[1]))
@@ -45,7 +45,7 @@ class TwoPhaseLockingv2():
                     newOp = Operation(int(entry[1]),entry[0],"")
                     tx = self.schedule.getTransactionByID(int(entry[1]))
                     tx.addOperation(newOp)
-                    self.sequence.append({"operation": entry[0], "transaction": int(entry[1])})
+                    self.sequence.append({"operation": newOp, "transaction": tx})
                 else:
                     raise ValueError("Invalid operation detected.")
                 
@@ -81,6 +81,47 @@ class TwoPhaseLockingv2():
             f"{entry['operation']} {entry['transaction']} {entry['table']} ({entry['status']})"
             for entry in self.transaction_history
         )
+    def shared_lock(self, transaction: int, resource: str) -> bool:
+        """Acquire a shared lock."""
+        if resource in self.exclusive_lock_table:
+            if self.exclusive_lock_table[resource] == transaction:
+                return True 
+            return False
+        if transaction in self.shared_lock_table[resource]:
+            return True 
+        print("append lock table")
+        self.shared_lock_table[resource].append(transaction)
+        self.log_transaction(transaction, resource, "SL", "Success")
+        return True
+
+    def exclusive_lock(self, transaction: int, resource: str) -> bool:
+        """Acquire an exclusive lock."""
+        if resource in self.shared_lock_table:
+            if transaction in self.shared_lock_table[resource] and len(self.shared_lock_table[resource]) == 1:
+                self.shared_lock_table[resource].remove(transaction)
+                self.exclusive_lock_table[resource] = transaction
+                self.log_transaction(transaction, resource, "UPL", "Success")
+                return True
+            return False
+        if resource in self.exclusive_lock_table:
+            return self.exclusive_lock_table[resource] == transaction
+        self.exclusive_lock_table[resource] = transaction
+        self.log_transaction(transaction, resource, "XL", "Success")
+        return True
+    
+    def testSL(self):
+        current = self.sequence.pop(0)
+        print(current)
+        if(current["operation"] == "R" and (self.shared_lock(current["transaction"],current["table"]))):
+            self.result.append(current)
+
+    def testXL(self):
+        current = self.sequence.pop(0)
+        print(current)
+        if(current["operation"] == "W" and (self.exclusive_lock(current["transaction"],current["table"]))):
+            self.result.append(current)
+
+        
 if __name__ == "__main__":
     print("1. Enter sequence")
     print("2. File Input")
@@ -103,5 +144,13 @@ if __name__ == "__main__":
 
     try:
         tpl = TwoPhaseLockingv2(input_seq)
+        print(tpl.sequence)
+        tpl.testSL()
+        tpl.testXL()
+        print(tpl.transaction_history)
+        print(tpl.shared_lock_table)
+        print(tpl.exclusive_lock_table)
+        tpl.history_string()
+        # tpl.result_string()
     except Exception as e:
         print(f"Error: {e}")
