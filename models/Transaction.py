@@ -58,3 +58,7 @@ class Transaction:
       if op not in self.operationList:
          op.setOperationID(len(self.operationList) + 1)
          self.operationList.append(op)
+
+   def printOperationList(self):
+      for op in self.operationList:
+         print(op.getOperationType(),op.getOpTransactionID(),f"({op.getOperationResource()})")

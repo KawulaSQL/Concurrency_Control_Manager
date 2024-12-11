@@ -1,6 +1,6 @@
-from models.Resource import Resource
-from models.Transaction import Transaction
-from models.Operation import Operation
+from models.models.models.Resource import Resource
+from models.models.Transaction import Transaction
+from models.models.Operation import Operation
 from models.CCManagerEnums import LockType
 from datetime import datetime, time
 class Schedule:

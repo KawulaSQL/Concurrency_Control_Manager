@@ -44,3 +44,6 @@ class Operation:
 
     def setOperationType(self,typeOp:OperationType): #set tipe operasi
         self.__opType = typeOp
+
+    def printOperation(self):
+        print(self.getOperationType(),self.getOpTransactionID(),f"{self.getOperationResource()}")

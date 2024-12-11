@@ -1,4 +1,4 @@
-from models.TwoPhaseLocking import TwoPhaseLocking
+from models.TwoPhaseLockingv2 import TwoPhaseLockingv2
 from models.TimeStampOrdering import TimestampOrdering
 from models.ControllerMethod import ControllerMethod
 from models.Schedule import Schedule
@@ -6,7 +6,6 @@ from models.Transaction import Transaction
 from models.Operation import Operation
 from models.Response import Response
 from models.CCManagerEnums import ResponseType, OperationStatus, TransactionStatus
-import time
 
 class ConcurrencyControlManager:
     """Manages concurrency control for transactions."""
@@ -21,7 +20,7 @@ class ConcurrencyControlManager:
         if controller == "TSO":
             self.controller = TimestampOrdering()
         else:
-            self.controller = TwoPhaseLocking()  # Default to TwoPhaseLocking if not "TSO"
+            self.controller = TwoPhaseLockingv2()  # Default to TwoPhaseLocking if not "MVCC"
         
         self.schedule = Schedule()
         self.running = True
