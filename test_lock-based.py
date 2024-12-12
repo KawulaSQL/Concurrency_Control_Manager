@@ -29,11 +29,11 @@ def simulate_wait_die():
     print(f"T3 (youngest): {t3.getTransactionID()}")
 
     operations = [
-        Operation(t1.getTransactionID(), OperationType.R, "Student_1"),
-        Operation(t2.getTransactionID(), OperationType.W, "Student_1"),
-        Operation(t3.getTransactionID(), OperationType.R, "Student_1"),
-        Operation(t1.getTransactionID(), OperationType.C, "Student_1"),
-        Operation(t2.getTransactionID(), OperationType.C, "Student_1"),
+        Operation(t1.getTransactionID(), OperationType.R, "student_1"),
+        Operation(t2.getTransactionID(), OperationType.W, "student_1"),
+        Operation(t3.getTransactionID(), OperationType.R, "student_1"),
+        Operation(t1.getTransactionID(), OperationType.C, "student_1"),
+        Operation(t2.getTransactionID(), OperationType.C, "student_1"),
     ]
 
     print("\nProcessing operations for Wait-Die:")
@@ -74,11 +74,11 @@ def simulate_wound_wait():
     print(f"T3 (youngest): {t3.getTransactionID()}")
 
     operations = [
-        Operation(t3.getTransactionID(), OperationType.W, "Student_2"),
-        Operation(t1.getTransactionID(), OperationType.R, "Student_2"),
-        Operation(t2.getTransactionID(), OperationType.W, "Student_2"),
-        Operation(t1.getTransactionID(), OperationType.C, "Student_2"),
-        Operation(t3.getTransactionID(), OperationType.W, "Student_2"),
+        Operation(t3.getTransactionID(), OperationType.W, "student_2"),
+        Operation(t1.getTransactionID(), OperationType.R, "student_2"),
+        Operation(t2.getTransactionID(), OperationType.W, "student_2"),
+        Operation(t1.getTransactionID(), OperationType.C, "student_2"),
+        Operation(t3.getTransactionID(), OperationType.W, "student_2"),
     ]
 
     print("\nProcessing operations for Wound-Wait:")
@@ -113,12 +113,12 @@ def simulate_complex_scenario():
         schedule.addTransaction(tx)
 
     operations = [
-        Operation(t1.getTransactionID(), OperationType.R, "Student_1"),
-        Operation(t1.getTransactionID(), OperationType.R, "Student_2"),
-        Operation(t2.getTransactionID(), OperationType.R, "Student_2"),
-        Operation(t2.getTransactionID(), OperationType.W, "Student_1"),
-        Operation(t3.getTransactionID(), OperationType.W, "Student_2"),
-        Operation(t1.getTransactionID(), OperationType.W, "Student_1"),
+        Operation(t1.getTransactionID(), OperationType.R, "student_1"),
+        Operation(t1.getTransactionID(), OperationType.R, "student_2"),
+        Operation(t2.getTransactionID(), OperationType.R, "student_2"),
+        Operation(t2.getTransactionID(), OperationType.W, "student_1"),
+        Operation(t3.getTransactionID(), OperationType.W, "student_2"),
+        Operation(t1.getTransactionID(), OperationType.W, "student_1"),
         Operation(t1.getTransactionID(), OperationType.C, None),
         Operation(t2.getTransactionID(), OperationType.C, None),
         Operation(t3.getTransactionID(), OperationType.C, None),
