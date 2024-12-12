@@ -1,71 +1,77 @@
-from ControllerMethod import ControllerMethod
-from Resource import Resource
-from CCManagerEnums import Action, ResponseType, OperationType
-from Response import Response, Operation
+from models.ControllerMethod import ControllerMethod
+from models.Resource import Resource
+from models.CCManagerEnums import ResponseType, OperationType, TransactionStatus
+from models.Response import Response
+from models.Operation import Operation
+from models.Schedule import Schedule
 from datetime import datetime
-
+from models.Schedule import Schedule,Operation,Resource
 class TimestampOrdering(ControllerMethod):
     def __init__(self):
-        self.transaction_history = []
-        self.aborted_transactions = set()
+        self.schedule = Schedule()
+        print("TimestampOrdering initialized, schedule created.")
 
-    def process_query(self, query: Operation) -> Response:
-        transaction_id = query.getOpTransactionID()
-        resource = query.getOperationResource()
+    def validate_object(self, operation: Operation) -> Response: 
+        """
+        Validating timestamp on object/resource
+        """
+        print(f"Validating operation to get resource: {operation.getOperationResource()}")
         
-        # Skip jika transaksi sudah diabort
-        if transaction_id in self.aborted_transactions:
-            return Response(ResponseType.ABORT, query)
+        # Creating/validating the Resource object of the requested resource name
+        operationResource = self.schedule.get_or_create_resource(operation.getOperationResource())
+        print(f"Operation resource: {operationResource.getName()}")
 
-        # Validasi operasi berdasarkan aturan timestamp ordering
-        if query.getOperationType() == OperationType.READ:
-            action = Action.READ
-        else:
-            action = Action.WRITE
+        transaction = self.schedule.getTransactionByID(operation.getOpTransactionID())
+        print(f"Transaction retrieved: {transaction.getTransactionID()}, Timestamp: {transaction.getTimestamp()}")
 
-        response = self.validate_object(resource, transaction_id, action)
-        if response.responseType == ResponseType.ALLOWED:
-            self.log_object(resource, transaction_id)
-            
-        return response
+        transaction.addOperation(operation)
 
-    def validate_object(self, resource: Resource, transaction_id: int, action: Action) -> Response:
-        if action == Action.READ:
-            if transaction_id < resource.getWTS():
-                return Response(ResponseType.ABORT, None)
-            if transaction_id > resource.getRTS():
-                resource.setRTS(transaction_id)
-            return Response(ResponseType.ALLOWED, None)
-            
-        elif action == Action.WRITE:
-            if (transaction_id < resource.getRTS() or 
-                transaction_id < resource.getWTS()):
-                return Response(ResponseType.ABORT, None)
-            resource.setWTS(transaction_id)
-            return Response(ResponseType.ALLOWED, None)
+        if operation.getOperationType() == OperationType.R:
+            if transaction.getTimestamp() < operationResource.getWTS():
+                print("Transaction timestamp is earlier than resource write timestamp. Transaction aborted.")
+                transaction.setTransactionStatus(TransactionStatus.ABORTED)
+                return Response(ResponseType.ABORT, operation)
+            else:
+                print("Transaction timestamp is after resource read timestamp. Transaction allowed.")
+                self.log_object(operation)
+                return Response(ResponseType.ALLOWED, operation)
+        elif operation.getOperationType() == OperationType.W:
+            if transaction.getTimestamp() < operationResource.getWTS() or transaction.getTimestamp() < operationResource.getRTS():
+                print("Transaction timestamp is earlier than resource timestamps. Transaction aborted.")
+                transaction.setTransactionStatus(TransactionStatus.ABORTED)
+                return Response(ResponseType.ABORT, operation)
+            print("Transaction timestamp is after resource read/write timestamp. Transaction allowed.")
+            self.log_object(operation)
+            return Response(ResponseType.ALLOWED, operation)
 
-    def log_object(self, resource: Resource, transaction_id: int):
-        self.transaction_history.append({
-            "transaction": transaction_id,
-            "resource": resource.getName(),
-            "timestamp": datetime.now()
-        })
+    def log_object(self, operation: Operation): 
+        """
+        Give timestamp to object.resource
+        """
+        print(f"Logging operation for resource: {operation.getOperationResource()}")
+        
+        transaction = self.schedule.getTransactionByID(operation.getOpTransactionID())
+        operationResource = self.schedule.get_or_create_resource(operation.getOperationResource())
 
-    def commit(self, transaction_id: int):
-        if transaction_id in self.aborted_transactions:
-            self.aborted_transactions.remove(transaction_id)
+        if operation.getOperationType() == OperationType.R:
+            print(f"Setting resource read timestamp for {operationResource.getName()} to the timestamp of Transaction-{transaction.getTransactionID()}.")
+            operationResource.setRTS(max(operationResource.getRTS(), transaction.getTimestamp()))
+        elif operation.getOperationType() == OperationType.W:
+            print(f"Setting resource write timestamp for {operationResource.getName()} to the timestamp of Transaction-{transaction.getTransactionID()}.")
+            operationResource.setWTS(transaction.getTimestamp())
 
-    def abort(self, transaction_id: int):
-        self.aborted_transactions.add(transaction_id)
+    def end_transaction(self, transaction_id: int):
+        """
+        Implementation
+        """
+        print(f"Ending transaction {transaction_id}.")
+        
+        transaction = self.schedule.getTransactionByID(transaction_id)
 
-    def get_transaction_history(self):
-        return self.transaction_history
-    
-    def get_aborted_transactions(self):
-        return self.aborted_transactions
-    
-    def clear_transaction_history(self):
-        self.transaction_history = []
+        if transaction.getTransactionStatus() == TransactionStatus.ABORTED:
+            print(f"Transaction {transaction_id} aborted, adding to waiting list.")
+            self.schedule.addWaitingTransaction(transaction)
 
-    def clear_aborted_transactions(self):
-        self.aborted_transactions = set()
+        self.schedule.removeTransaction(transaction)
+        transaction.setTransactionStatus(TransactionStatus.TERMINATED)
+        print(f"Transaction {transaction_id} removed and terminated.")

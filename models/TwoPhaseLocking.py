@@ -1,65 +1,91 @@
 from collections import defaultdict
 from abc import ABC
-from Resource import Resource
-from CCManagerEnums import Action
-from Response import Response,Operation
-from ControllerMethod import ControllerMethod
-from Transaction import Transaction
+from models.Schedule import Schedule
+from models.Resource import Resource
+from models.Response import Response
+from models.Operation import Operation
+from models.ControllerMethod import ControllerMethod
+from models.Transaction import Transaction
+from models.CCManagerEnums import OperationType, ResponseType, TransactionStatus
+
 class TwoPhaseLocking(ControllerMethod, ABC):
-    def __init__(self, input_sequence: str):
-        self.sequence = []
-        self.timestamp = []
-        self.exclusive_lock_table = {}
-        self.shared_lock_table = defaultdict(list)
-        self.transaction_history = []
-        self.result = []
-        self.queue = []
+    def __init__(self):
+        self.schedule = Schedule()
 
-     # Parse input sequence
-        try:
-            input_sequence = input_sequence.rstrip(";").split(";")
-            for entry in input_sequence:
-                entry = entry.strip()
-                if entry[0] in {'R', 'W'}:
-                    self.sequence.append({
-                        "operation": entry[0],
-                        "transaction": int(entry[1]),
-                        "table": entry[3]
-                    })
-                    if int(entry[1]) not in self.timestamp:
-                        self.timestamp.append(int(entry[1]))
-                elif entry[0] == 'C':
-                    self.sequence.append({"operation": entry[0], "transaction": int(entry[1])})
-                else:
-                    raise ValueError("Invalid operation detected.")
-            # Ensure each transaction has a commit
-            if len([x for x in self.sequence if x["operation"] == 'C']) != len(set(self.timestamp)):
-                raise ValueError("Each transaction must have a commit operation.")
-        except ValueError as e:
-            raise ValueError(f"Invalid input sequence: {e}")
+    def log_object(self, operation: Operation): 
+        """
+        locking object/resource
+        """
+        # self.transaction_history.append({
+        #     "transaction": transaction_id,
+        #     "table": resource.name,
+        #     "operation": "LOG",
+        #     "status": "Logged"
+        # })
 
-    def process_query(self, query: Operation) -> Response:
+        print(f"Logging operation for resource: {operation.getOperationResource()}")
+
+        transaction = self.schedule.getTransactionByID(operation.getOpTransactionID())
+        operationResource = self.schedule.get_or_create_resource(operation.getOperationResource())
+
+        # Give Lock to the object/resource
+        if operation.getOperationType() == OperationType.R:
+            print(f"Setting resource read lock for {operationResource.getName()} to the transaction-{transaction.getTransactionID()}.")
+            operationResource.addLockHolder(transaction.getTransactionID(), "S", "Locked")
+        elif operation.getOperationType() == OperationType.W:
+            print(f"Setting resource write lock for {operationResource.getName()} to the transaction-{transaction.getTransactionID()}.")
+            operationResource.addLockHolder(transaction.getTransactionID(), "X", "Locked")
+
+    def validate_object(self, operation: Operation) -> Response: #rough implementation
         """
-        Execute the concurrency control mechanism's logic (e.g., validate locks, resolve conflicts).
-        Implement this function, call the log_object and validate_object method that may be needed
+        Checking lock on object/resource
         """
-        pass
-    
-    def log_object(self, resource: Resource, transaction_id: int): #rough implementation
-        self.transaction_history.append({
-            "transaction": transaction_id,
-            "table": resource.name,
-            "operation": "LOG",
-            "status": "Logged"
-        })
-    def validate_object(self, resource: Resource, transaction_id: int, action: Action) -> Response: #rough implementation
-        if action == Action.READ:
-            success = self.shared_lock(transaction_id, resource.name)
-        elif action == Action.WRITE:
-            success = self.exclusive_lock(transaction_id, resource.name)
+        # if action == Action.READ:
+        #     success = self.shared_lock(transaction_id, resource.name)
+        # elif action == Action.WRITE:
+        #     success = self.exclusive_lock(transaction_id, resource.name)
+        # else:
+        #     success = False
+        # return Response(success=success, message="Validation successful" if success else "Validation failed")
+
+        print(f"Validating operation to get resource: {operation.getOperationResource()}")
+
+        # Creating/validating the Resource object of the requested resource name
+        operationResource = self.schedule.get_or_create_resource(operation.getOperationResource())
+        print(f"Operation resource: {operationResource.getName()}")
+
+        transaction = self.schedule.getTransactionByID(operation.getOpTransactionID())
+        print(f"Transaction retrieved: {transaction.getTransactionID()}, Timestamp: {transaction.getTimestamp()}")
+
+        transaction.addOperation(operation)
+
+        # Use the lock type to determine if the transaction can proceed
+        if operation.getOperationType() == OperationType.R:
+            if not self.shared_lock(transaction.getTransactionID(), operationResource.getName()):
+                print("Transaction cannot acquire shared lock. Transaction aborted.")
+                transaction.setTransactionStatus(TransactionStatus.ABORTED)
+                return Response(ResponseType.ABORT, operation)
+        elif operation.getOperationType() == OperationType.W:
+            if not self.exclusive_lock(transaction.getTransactionID(), operationResource.getName()):
+                print("Transaction cannot acquire exclusive lock. Transaction aborted.")
+                transaction.setTransactionStatus(TransactionStatus.ABORTED)
+                return Response(ResponseType.ABORT, operation)
+        return Response(ResponseType.ALLOWED, operation)
+
+    def end_transaction(self, transaction_id: int):
+        """
+        Implementation
+        """
+        print(f"Ending transaction {transaction_id}.")
+
+        transaction = self.schedule.getTransactionByID(transaction_id)
+        
+        # Release all locks held by the transaction but check if the transaction is still active first or if it has been aborted
+        if transaction.getTransactionStatus() == TransactionStatus.ACTIVE:
+            self.release_locks(transaction)
+            transaction.setTransactionStatus(TransactionStatus.COMMITTED)
         else:
-            success = False
-        return Response(success=success, message="Validation successful" if success else "Validation failed")
+            self.abort(transaction_id)
 
         
     def shared_lock(self, transaction: int, table: str) -> bool:
@@ -110,25 +136,38 @@ class TwoPhaseLocking(ControllerMethod, ABC):
         #             del self.shared_lock_table[table]
 
     def wait_die(self, current: dict):
-        """Deadlock prevention using the wait-die scheme."""
-        transaction = current["transaction"]
-        table = current["table"]
-        if (
-            table in self.exclusive_lock_table and
-            self.timestamp.index(transaction) < self.timestamp.index(self.exclusive_lock_table[table])
-        ) or (
-            table in self.shared_lock_table and
-            all(self.timestamp.index(transaction) < self.timestamp.index(t) for t in self.shared_lock_table[table])
-        ):
-            self.queue.append(current)
-            self.log_transaction(transaction, table, current["operation"], "Queue")
-        else:
-            self.abort(current)
+        """ IMPLEMENT THE LOGIC IN VALIDATE_OBJECT FUNCTION
+        Deadlock prevention using the wait-die scheme."""
+        # transaction = current["transaction"]
+        # table = current["table"]
+        # if (
+        #     table in self.exclusive_lock_table and
+        #     self.timestamp.index(transaction) < self.timestamp.index(self.exclusive_lock_table[table])
+        # ) or (
+        #     table in self.shared_lock_table and
+        #     all(self.timestamp.index(transaction) < self.timestamp.index(t) for t in self.shared_lock_table[table])
+        # ):
+        #     self.queue.append(current)
+        #     self.log_transaction(transaction, table, current["operation"], "Queue")
+        # else:
+        #     self.abort(current)
 
-    def commit(self, transaction: int):
-        """Commit a transaction and release its locks."""
-        self.release_locks(transaction)
-        self.log_transaction(transaction, "-", "Commit", "Success")
+    def wound_wait(self, current: dict):
+        """Deadlock prevention using the wound-wait scheme."""
+        
+
+    # def commit(self, transaction_id: int):
+    #     """Commit a transaction and release its locks."""
+        # self.release_locks(transaction)
+        # self.log_transaction(transaction, "-", "Commit", "Success")
+
+    # def abort(self, transaction_id: int):
+    #     """Abort a transaction."""
+        # transaction = current["transaction"]
+        # transaction_id = transaction.getTransactionID
+        # self.schedule.setOperationQueue([op for op in self.schedule.getOperationQueue if op.getOpTransactionID != transaction_id])
+        # self.schedule.setOperationWaitingList([op for op in self.schedule.getOperationWaitingList if op.getOpTransactionID != transaction_id])
+        # self.release_locks(transaction)
 
     # def abort(self, current: dict):
     #     """Abort a transaction."""
@@ -137,87 +176,3 @@ class TwoPhaseLocking(ControllerMethod, ABC):
     #     self.result = [op for op in self.result if op["transaction"] != transaction]
     #     self.release_locks(transaction)
     #     self.log_transaction(transaction, current.get("table", "-"), "Abort", "Abort")
-    def abort(self, current: dict):
-        """Abort a transaction."""
-        transaction = current["transaction"]
-        transaction_id = transaction.getTransactionID
-        self.schedule.setOperationQueue([op for op in self.schedule.getOperationQueue if op.getOpTransactionID != transaction_id])
-        self.schedule.setOperationWaitingList([op for op in self.schedule.getOperationWaitingList if op.getOpTransactionID != transaction_id])
-        self.release_locks(transaction)
-
-    def run_queue(self):
-        """Process queued operations."""
-        while self.queue:
-            transaction = self.queue.pop(0)
-            if transaction["operation"] == "R" and self.shared_lock(transaction["transaction"], transaction["table"]):
-                self.result.append(transaction)
-            elif transaction["operation"] == "W" and self.exclusive_lock(transaction["transaction"], transaction["table"]):
-                self.result.append(transaction)
-            else:
-                self.queue.insert(0, transaction)
-                break
-
-    def run(self):
-        """Execute the sequence of operations."""
-        while self.sequence:
-            self.run_queue()
-            current = self.sequence.pop(0)
-            if current["operation"] == "C":
-                self.commit(current["transaction"])
-            elif current["operation"] == "R" and self.shared_lock(current["transaction"], current["table"]):
-                self.result.append(current)
-            elif current["operation"] == "W" and self.exclusive_lock(current["transaction"], current["table"]):
-                self.result.append(current)
-            else:
-                self.wait_die(current)
-
-    def log_transaction(self, transaction, table, operation, status):
-        """Log transaction operations."""
-        self.transaction_history.append({
-            "transaction": transaction, "table": table, "operation": operation, "status": status
-        })
-
-    def result_string(self) -> str:
-        """Generate a result string from the operations."""
-        return ";".join(
-            f"{op['operation']}{op['transaction']}({op['table']})" if "table" in op else f"{op['operation']}{op['transaction']}"
-            for op in self.result
-        )
-
-    def history_string(self) -> str:
-        """Generate a string representation of transaction history."""
-        return "\n".join(
-            f"{entry['operation']} {entry['transaction']} {entry['table']} ({entry['status']})"
-            for entry in self.transaction_history
-        )
-
-
-if __name__ == "__main__":
-    print("1. Enter sequence")
-    print("2. File Input")
-    input_choice = input("Enter your option (1 or 2): ")
-    
-    if (input_choice == 1):
-        input_seq = input("Enter sequence (delimited by ';'): ")
-    elif input_choice == "2":
-        file_name = input("Enter file name: ")
-        file_name = "./test/" + file_name
-        try:
-            with open(file_name, "r") as file:
-                input_seq = file.read().strip()
-        except FileNotFoundError:
-            print("Error: File not found. Please check the file name and path.")
-            exit()
-    else:
-        print("Invalid option. Exiting.")
-        exit()
-
-    try:
-        tpl = TwoPhaseLocking(input_seq)
-        tpl.run()
-        print("\nExecution Result:")
-        print(tpl.result_string())
-        print("\nTransaction History:")
-        print(tpl.history_string())
-    except Exception as e:
-        print(f"Error: {e}")

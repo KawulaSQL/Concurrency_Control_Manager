@@ -1,8 +1,7 @@
 from abc import ABC, abstractmethod
 
-from Resource import Resource
-from CCManagerEnums import Action
-from Response import Response,Operation
+from models.Resource import Resource
+from models.Response import Response,Operation
 
 class ControllerMethod(ABC):
     """
@@ -10,7 +9,7 @@ class ControllerMethod(ABC):
     """
 
     @abstractmethod
-    def log_object(self, resource: Resource, transaction_id: int):
+    def log_object(self, operation: Operation): 
         """
         Logs an operation involving a resource by a transaction. 
         Logs an object (Resource) on transaction <transaction_id>. 
@@ -22,7 +21,7 @@ class ControllerMethod(ABC):
         pass
 
     @abstractmethod
-    def validate_object(self, resource: Resource, transaction_id: int, action: Action) -> Response:
+    def validate_object(self, operation: Operation) -> Response:
         """
         Validates an operation involving a resource by a transaction. 
         Validates a given object whether it is allowed to do a particular action or not. 
@@ -36,23 +35,15 @@ class ControllerMethod(ABC):
         pass
 
     @abstractmethod
-    def process_query(self, query: Operation) -> Response:
+    def end_transaction(self, transaction_id: int):
         """
-        Execute the concurrency control mechanism's logic (e.g., validate locks, resolve conflicts).
-        Implement this function, call the log_object and validate_object method that may be needed
-        """
-        pass
-
-    @abstractmethod
-    def commit(self):
-        """
-        Commit a transaction, making its changes permanent.
-        """
-        pass
-
-    @abstractmethod
-    def abort(self):
-        """
-        Abort a transaction, rolling back any changes made.
+        Validates an operation involving a resource by a transaction. 
+        Validates a given object whether it is allowed to do a particular action or not. 
+        he response would either be to allow the transaction or not.
+        
+        :param resource: The resource involved in the operation.
+        :param transaction_id: The ID of the transaction performing the operation.
+        :param action: The action (e.g., READ, WRITE) being performed.
+        :return: A Response object indicating success or failure.
         """
         pass

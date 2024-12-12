@@ -4,14 +4,17 @@ class LockType(Enum):
     S = "Shared"
     X = "Exclusive"
     N = "None"
+class LockStatus(Enum):
+    HOLDING = "Holding"
+    WAITING = "Waiting"
 class OperationType(Enum):
-    R = "Read"
-    W = "Write"
+    R = "READ"
+    W = "WRITE"
+    C = "COMMIT"
+    A = "ABORT"
     SL = "Shared Lock"
     XL = "Exclusive Lock"
     UL = "Unlock"
-    C = "Commit"
-    A = "Abort"
 class OperationStatus(Enum):
     E = "Executed"
     NE = "Not Executed"
@@ -22,9 +25,7 @@ class TransactionStatus(Enum):
     FAILED = "Failed"
     ABORTED = "Aborted"
     TERMINATED = "Terminated"
-class Action(Enum):
-    READ = 'read'
-    WRITE = 'write'
+    WAITING = "Waiting"
 class ResponseType(Enum):
     ALLOWED = 'Allowed'
     WAITING = 'Waiting'
