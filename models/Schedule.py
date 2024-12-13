@@ -62,8 +62,9 @@ class Schedule:
         """Remove a transaction from the transactionList by txID."""
         if tx.txID in self.transactionList:
             del self.transactionList[tx.txID]
+            print(f"Transaction {tx.txID} removed from transaction waiting list")
 
-    def addWaitingTransaction(self, tx: Transaction, id_transaction_blocker: int):
+    def addWaitingTransaction(self, tx: Transaction, id_transaction_blocker: int = None):
         """Add a transaction to the transactionWaitingList by txID."""
         self.transactionWaitingList[tx.txID] = (tx, id_transaction_blocker)
 
