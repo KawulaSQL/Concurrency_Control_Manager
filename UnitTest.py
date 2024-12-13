@@ -24,7 +24,6 @@ class UnitTest(unittest.TestCase):
         self.resource_b = Resource("schedule")
         self.resource_c = Resource("transportation")
 
-
     def test_normal_case_2PL(self):
         opList = [
             Operation(self.tx_id_1_2PL, OperationType.R, self.resource_a),
@@ -102,7 +101,6 @@ class UnitTest(unittest.TestCase):
         self.assertTrue(has_aborted, "No response returned ResponseType.ABORTED.")
 
     def tearDown(self):
-        # End transactions for cleanup
         self.ccm_2PL.end_transaction(self.tx_id_1_2PL)
         self.ccm_2PL.end_transaction(self.tx_id_2_2PL)
         self.ccm_TSO.end_transaction(self.tx_id_1_TSO)
