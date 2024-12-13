@@ -11,7 +11,7 @@ from models.CCManagerEnums import ResponseType, OperationStatus, TransactionStat
 class ConcurrencyControlManager:
     """Manages concurrency control for transactions."""
 
-    def __init__(self, controller="TSO"):
+    def __init__(self, controller="2PL"):
         """
         Initialize the ConcurrencyControlManager.
 
