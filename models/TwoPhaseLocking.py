@@ -6,6 +6,9 @@ from models.Operation import Operation
 from models.Response import Response
 from models.CCManagerEnums import OperationType, ResponseType, TransactionStatus, LockType, LockStatus
 
+YELLOW = '\033[33m'
+RESET = '\033[0m'
+
 class TwoPhaseLocking(ControllerMethod):
     def __init__(self, deadlock_prevention: str = "WAIT-DIE"):
         self.sequence = []
@@ -15,7 +18,7 @@ class TwoPhaseLocking(ControllerMethod):
         self.holder = None
 
     def validate_object(self, operation: Operation) -> Response:
-        print(f"Validating operation to get resource: {operation.getOperationResource()}")
+        print(f"{YELLOW}Validating operation to get resource: {operation.getOperationResource()}{RESET}")
         
         operationResource = self.schedule.get_or_create_resource(operation.getOperationResource())
         transaction = self.schedule.getTransactionByID(operation.getOpTransactionID())
@@ -30,8 +33,8 @@ class TwoPhaseLocking(ControllerMethod):
             else:
                 return Response(ResponseType.ABORT, operation)
 
-        print(f"Operation resource: {operationResource.getName()}")
-        print(f"Transaction retrieved ID: {transaction.getTransactionID()}, Status: {transaction.getTransactionStatus()}")
+        print(f"{YELLOW}Operation resource: {operationResource.getName()}{RESET}")
+        print(f"{YELLOW}Transaction retrieved ID: {transaction.getTransactionID()}, Status: {transaction.getTransactionStatus()}{RESET}")
 
         transaction.addOperation(operation)
         
@@ -70,7 +73,7 @@ class TwoPhaseLocking(ControllerMethod):
         return Response(ResponseType.ALLOWED, operation)
 
     def log_object(self, operation: Operation):
-        print(f"Logging operation for resource: {operation.getOperationResource()}")
+        print(f"{YELLOW}Logging operation for resource: {operation.getOperationResource()}{RESET}")
         
         transaction = self.schedule.getTransactionByID(operation.getOpTransactionID())
         resource = self.schedule.get_or_create_resource(operation.getOperationResource())
@@ -80,8 +83,8 @@ class TwoPhaseLocking(ControllerMethod):
         elif operation.getOperationType() == OperationType.W:
             self._grant_exclusive_lock(transaction, resource)
         
-        print(f"Lock holders for {resource.getName()}: {resource.getLockHolderList()}")
-        print(f"Waiting Transactions: {self.schedule.getTransactionWaitingList()}")
+        print(f"{YELLOW}Lock holders for {resource.getName()}: {resource.getLockHolderList()}{RESET}")
+        print(f"{YELLOW}Waiting Transactions: {self.schedule.getTransactionWaitingList()}{RESET}")
 
     def _grant_shared_lock(self, transaction, resource):
         transaction_id = transaction.getTransactionID()
@@ -95,7 +98,7 @@ class TwoPhaseLocking(ControllerMethod):
                     return
         
         lock_holders.append((transaction_id, LockType.S, LockStatus.HOLDING))
-        print(f"Resource {resource.getName()} has shared lock granted on transaction {transaction_id}")
+        print(f"{YELLOW}Resource {resource.getName()} has shared lock granted on transaction {transaction_id}{RESET}")
 
     def _grant_exclusive_lock(self, transaction, resource):
         transaction_id = transaction.getTransactionID()
@@ -107,11 +110,11 @@ class TwoPhaseLocking(ControllerMethod):
                     return
                 elif lock_type == LockType.S and len(lock_holders) == 1 and transaction_id == holder_id:
                     lock_holders[i] = (transaction_id, LockType.X, LockStatus.HOLDING)
-                    print(f"Resource {resource.getName()} lock upgraded to exclusive for transaction {transaction_id}")
+                    print(f"{YELLOW}Resource {resource.getName()} lock upgraded to exclusive for transaction {transaction_id}{RESET}")
                     return
         
         lock_holders.append((transaction_id, LockType.X, LockStatus.HOLDING))
-        print(f"Resource {resource.getName()} has exclusive lock granted")
+        print(f"{YELLOW}Resource {resource.getName()} has exclusive lock granted{RESET}")
 
     def release_locks(self, transaction):
         transaction_id = transaction.getTransactionID()
@@ -131,12 +134,12 @@ class TwoPhaseLocking(ControllerMethod):
 
     def _wait_die_strategy(self, requesting_tx, holding_tx_id: int, operation: Operation) -> Response:
         if holding_tx_id > requesting_tx.getTransactionID():
-            print(f"Wait-Die: T{requesting_tx.getTransactionID()} (older) waiting for T{holding_tx_id} (younger)")
+            print(f"{YELLOW}Wait-Die: T{requesting_tx.getTransactionID()} (older) waiting for T{holding_tx_id} (younger){RESET}")
             requesting_tx.setTransactionStatus(TransactionStatus.WAITING)
             self.wait_sequence.append(operation)
             return Response(ResponseType.WAITING, operation)
         else:
-            print(f"Wait-Die: T{requesting_tx.getTransactionID()} (younger) aborted")
+            print(f"{YELLOW}Wait-Die: T{requesting_tx.getTransactionID()} (younger) aborted{RESET}")
             requesting_tx.setTransactionStatus(TransactionStatus.ABORTED)
             self.release_locks(requesting_tx)
             self.holder = holding_tx_id
@@ -144,33 +147,32 @@ class TwoPhaseLocking(ControllerMethod):
 
     def _wound_wait_strategy(self, requesting_tx, holding_tx_id: int, operation: Operation) -> Response:
         if holding_tx_id > requesting_tx.getTransactionID():
-            print(f"Wound-Wait: T{requesting_tx.getTransactionID()} (older) wounding T{holding_tx_id} (younger)")
+            print(f"{YELLOW}Wound-Wait: T{requesting_tx.getTransactionID()} (older) wounding T{holding_tx_id} (younger){RESET}")
             holding_tx = self.schedule.getTransactionByID(holding_tx_id)
             if holding_tx:
                 holding_tx.setTransactionStatus(TransactionStatus.ABORTED)
                 self.release_locks(holding_tx)
             return Response(ResponseType.ALLOWED, operation)
         else:
-            print(f"Wound-Wait: T{requesting_tx.getTransactionID()} (younger) waiting for T{holding_tx_id} (older)")
+            print(f"{YELLOW}Wound-Wait: T{requesting_tx.getTransactionID()} (younger) waiting for T{holding_tx_id} (older){RESET}")
             requesting_tx.setTransactionStatus(TransactionStatus.WAITING)
             self.wait_sequence.append(operation)
             self.holder = holding_tx_id
             return Response(ResponseType.WAITING, operation)
 
     def end_transaction(self, transaction_id: int):
-        print(f"Ending transaction {transaction_id}")
+        print(f"{YELLOW}Ending transaction {transaction_id}{RESET}")
         
         transaction = self.schedule.getTransactionByID(transaction_id)
         if not transaction:
             return
 
         if transaction.getTransactionStatus() == TransactionStatus.ABORTED:
-            print(f"Transaction {transaction_id} aborted, adding to waiting list")
+            print(f"{YELLOW}Transaction {transaction_id} aborted, adding to waiting list{RESET}")
             self.schedule.addWaitingTransaction(transaction, self.holder)
 
         self.schedule.removeTransaction(transaction)
         self.release_locks(transaction)
         transaction.setTransactionStatus(TransactionStatus.TERMINATED)
-        print(f"Transaction {transaction_id} removed and terminated")
-
-        print(f"Transaction List: {self.schedule.getTransactionList().keys()}")
+        print(f"{YELLOW}Transaction {transaction_id} removed and terminated{RESET}")
+        print(f"{YELLOW}Transaction List: {self.schedule.getTransactionList().keys()}{RESET}")
