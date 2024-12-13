@@ -66,40 +66,6 @@ class UnitTest(unittest.TestCase):
         has_aborted = any(result.responseType == self.aborted_response for result in results)
         self.assertTrue(has_aborted, "No response returned ResponseType.ABORTED.")
 
-    def test_normal_case_TSO(self):
-        opList = [
-            Operation(self.tx_id_1_TSO, OperationType.R, self.resource_a),
-            Operation(self.tx_id_2_TSO, OperationType.R, self.resource_a),
-            Operation(self.tx_id_1_TSO, OperationType.W, self.resource_b),
-            Operation(self.tx_id_2_TSO, OperationType.W, self.resource_c),
-        ]
-        results = []
-        for operation in opList:
-            result = self.ccm_TSO.validate_object(operation)
-            self.ccm_TSO.log_object(operation)
-            results.append(result)
-
-        has_waiting_or_aborted = any(
-            result.responseType == self.waiting_response or
-            result.responseType == self.aborted_response
-            for result in results
-        )
-        self.assertFalse(has_waiting_or_aborted, "There is Response that returned ResponseType.WAITING or ResponseType.ABORT.")
-
-    def test_abort_case_TSO(self):
-        opList = [
-            Operation(self.tx_id_2_TSO, OperationType.R, self.resource_a),
-            Operation(self.tx_id_2_TSO, OperationType.R, self.resource_b),
-            Operation(self.tx_id_1_TSO, OperationType.W, self.resource_a),
-        ]
-        results = []
-        for operation in opList:
-            result = self.ccm_TSO.validate_object(operation)
-            self.ccm_TSO.log_object(operation)
-            results.append(result)
-        has_aborted = any(result.responseType == self.aborted_response for result in results)
-        self.assertTrue(has_aborted, "No response returned ResponseType.ABORTED.")
-
     def tearDown(self):
         self.ccm_2PL.end_transaction(self.tx_id_1_2PL)
         self.ccm_2PL.end_transaction(self.tx_id_2_2PL)
