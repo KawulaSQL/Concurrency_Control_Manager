@@ -5,7 +5,7 @@ from models.Response import Response
 from models.Operation import Operation
 from models.Schedule import Schedule
 from datetime import datetime
-from models.Schedule import Schedule,Operation,Resource
+from models.Schedule import Schedule
 class TimestampOrdering(ControllerMethod):
     def __init__(self):
         self.schedule = Schedule()
@@ -16,14 +16,20 @@ class TimestampOrdering(ControllerMethod):
         Validating timestamp on object/resource
         """
         print(f"Validating operation to get resource: {operation.getOperationResource()}")
-        
         # Creating/validating the Resource object of the requested resource name
         operationResource = self.schedule.get_or_create_resource(operation.getOperationResource())
         print(f"Operation resource: {operationResource.getName()}")
 
-        transaction = self.schedule.getTransactionByID(operation.getOpTransactionID())
-        print(f"Transaction retrieved: {transaction.getTransactionID()}, Timestamp: {transaction.getTimestamp()}")
-
+        #Checking whether operation is aborted before
+        transaction = self.schedule.getWaitingTransaction(operation.getOpTransactionID())
+        if (transaction):
+            transaction.setTransactionStatus(TransactionStatus.ACTIVE)
+            transaction.setTimestamp(datetime.now())
+            print(f"Transaction reactivated: {transaction.getTransactionID()}, Timestamp: {transaction.getTimestamp()}")
+            self.schedule.removeTransaction(transaction)
+        else:
+            transaction = self.schedule.getTransactionByID(operation.getOpTransactionID())
+            print(f"Transaction retrieved: {transaction.getTransactionID()}, Timestamp: {transaction.getTimestamp()}")
         transaction.addOperation(operation)
 
         if operation.getOperationType() == OperationType.R:
