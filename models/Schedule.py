@@ -1,7 +1,7 @@
 from models.Resource import Resource
 from models.Transaction import Transaction
 from models.Operation import Operation
-from models.CCManagerEnums import LockType
+from models.CCManagerEnums import LockType,TransactionStatus
 from datetime import datetime, time
 class Schedule:
     _instance = None
@@ -83,9 +83,10 @@ class Schedule:
             return entry[0]  # Return the Transaction object
         return None
 
-    def checkWaitingTransactionBlocker(self, txID: int) -> int:
+    def checkWaitingTransactionBlocker(self, txID: int) -> bool:
         """Retrieve the id_transaction_blocker for a waiting transaction by txID."""
         entry = self.transactionWaitingList.get(txID)
         if entry:
-            return entry[1] 
-        return -1 
+            blockerTransaction = self.getTransactionByID(entry[1])
+            return blockerTransaction.getTransactionStatus() == TransactionStatus.COMMITTED
+        return False

@@ -31,9 +31,10 @@ def simulate_wait_die():
     operations = [
         Operation(t1.getTransactionID(), OperationType.R, "student_1"),
         Operation(t2.getTransactionID(), OperationType.W, "student_1"),
-        Operation(t3.getTransactionID(), OperationType.R, "student_1"),
-        Operation(t1.getTransactionID(), OperationType.C, "student_1"),
-        Operation(t2.getTransactionID(), OperationType.C, "student_1"),
+        Operation(t3.getTransactionID(), OperationType.R, "student_1")
+        # Operation(t1.getTransactionID(), OperationType.C, "student_1"),
+        # Operation(t2.getTransactionID(), OperationType.C, "student_1"),
+        # Operation(t3.getTransactionID(), OperationType.C, "student_1")
     ]
 
     print("\nProcessing operations for Wait-Die:")
@@ -146,8 +147,8 @@ def main():
     print_status("DEADLOCK PREVENTION SIMULATION")
     
     simulate_wait_die()
-    simulate_wound_wait()
-    simulate_complex_scenario()
+    # simulate_wound_wait()
+    # simulate_complex_scenario()
 
 if __name__ == "__main__":
     main()
