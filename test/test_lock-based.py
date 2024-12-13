@@ -1,3 +1,8 @@
+import sys
+import os
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from models.Transaction import Transaction
 from models.Operation import Operation
 from models.CCManagerEnums import OperationType, ResponseType, TransactionStatus

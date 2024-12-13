@@ -1,6 +1,9 @@
-import threading
+import sys
+import os
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import time
-from models.Resource import Resource
 from models.CCManagerEnums import OperationType
 from ConcurrencyControlManager import ConcurrencyControlManager,Operation
 
@@ -37,14 +40,6 @@ def main():
             ccm.validate_object(opList[i])
             print()
 
-    # thread1 = threading.Thread(target=task1)
-    # thread2 = threading.Thread(target=task2)
-
-    # thread1.start()
-    # thread2.start()
-
-    # thread1.join()
-    # thread2.join()
     print("Normal Condition")
     normal()
     time.sleep(1)
