@@ -1,178 +1,176 @@
 from collections import defaultdict
-from abc import ABC
-from models.Schedule import Schedule
-from models.Resource import Resource
-from models.Response import Response
-from models.Operation import Operation
+from typing import Optional, Dict, List
 from models.ControllerMethod import ControllerMethod
-from models.Transaction import Transaction
-from models.CCManagerEnums import OperationType, ResponseType, TransactionStatus
+from models.Schedule import Schedule
+from models.Operation import Operation
+from models.Response import Response
+from models.CCManagerEnums import OperationType, ResponseType, TransactionStatus, LockType, LockStatus
 
-class TwoPhaseLocking(ControllerMethod, ABC):
-    def __init__(self):
+class TwoPhaseLocking(ControllerMethod):
+    def __init__(self, deadlock_prevention: str = "WAIT-DIE"):
+        self.sequence = []
         self.schedule = Schedule()
+        self.wait_sequence = []
+        self.deadlock_strategy = deadlock_prevention
+        self.holder = None
 
-    def log_object(self, operation: Operation): 
-        """
-        locking object/resource
-        """
-        # self.transaction_history.append({
-        #     "transaction": transaction_id,
-        #     "table": resource.name,
-        #     "operation": "LOG",
-        #     "status": "Logged"
-        # })
-
-        print(f"Logging operation for resource: {operation.getOperationResource()}")
-
-        transaction = self.schedule.getTransactionByID(operation.getOpTransactionID())
-        operationResource = self.schedule.get_or_create_resource(operation.getOperationResource())
-
-        # Give Lock to the object/resource
-        if operation.getOperationType() == OperationType.R:
-            print(f"Setting resource read lock for {operationResource.getName()} to the transaction-{transaction.getTransactionID()}.")
-            operationResource.addLockHolder(transaction.getTransactionID(), "S", "Locked")
-        elif operation.getOperationType() == OperationType.W:
-            print(f"Setting resource write lock for {operationResource.getName()} to the transaction-{transaction.getTransactionID()}.")
-            operationResource.addLockHolder(transaction.getTransactionID(), "X", "Locked")
-
-    def validate_object(self, operation: Operation) -> Response: #rough implementation
-        """
-        Checking lock on object/resource
-        """
-        # if action == Action.READ:
-        #     success = self.shared_lock(transaction_id, resource.name)
-        # elif action == Action.WRITE:
-        #     success = self.exclusive_lock(transaction_id, resource.name)
-        # else:
-        #     success = False
-        # return Response(success=success, message="Validation successful" if success else "Validation failed")
-
+    def validate_object(self, operation: Operation) -> Response:
         print(f"Validating operation to get resource: {operation.getOperationResource()}")
-
-        # Creating/validating the Resource object of the requested resource name
+        
         operationResource = self.schedule.get_or_create_resource(operation.getOperationResource())
-        print(f"Operation resource: {operationResource.getName()}")
-
         transaction = self.schedule.getTransactionByID(operation.getOpTransactionID())
-        print(f"Transaction retrieved: {transaction.getTransactionID()}, Timestamp: {transaction.getTimestamp()}")
+        transactionWaitingList = self.schedule.getTransactionWaitingList()
+        
+        if not transaction:
+            return Response(ResponseType.ABORT, operation)
+        
+        if transaction.getTransactionID() in transactionWaitingList:
+            if self.schedule.checkWaitingTransactionBlocker(transaction.getTransactionID()):
+                transaction.setTransactionStatus(TransactionStatus.ACTIVE)
+            else:
+                return Response(ResponseType.ABORT, operation)
+
+        print(f"Operation resource: {operationResource.getName()}")
+        print(f"Transaction retrieved ID: {transaction.getTransactionID()}, Status: {transaction.getTransactionStatus()}")
 
         transaction.addOperation(operation)
-
-        # Use the lock type to determine if the transaction can proceed
+        
         if operation.getOperationType() == OperationType.R:
-            if not self.shared_lock(transaction.getTransactionID(), operationResource.getName()):
-                print("Transaction cannot acquire shared lock. Transaction aborted.")
-                transaction.setTransactionStatus(TransactionStatus.ABORTED)
-                return Response(ResponseType.ABORT, operation)
+            return self._handle_read_operation(transaction, operationResource, operation)
         elif operation.getOperationType() == OperationType.W:
-            if not self.exclusive_lock(transaction.getTransactionID(), operationResource.getName()):
-                print("Transaction cannot acquire exclusive lock. Transaction aborted.")
-                transaction.setTransactionStatus(TransactionStatus.ABORTED)
-                return Response(ResponseType.ABORT, operation)
+            return self._handle_write_operation(transaction, operationResource, operation)
+        
+        return Response(ResponseType.ABORT, operation)
+
+    def _handle_read_operation(self, transaction, resource, operation) -> Response:
+        lock_holders = resource.getLockHolderList()
+        transaction_id = transaction.getTransactionID()
+        
+        for holder_id, lock_type, lock_status in lock_holders:
+            if lock_type == LockType.X and holder_id != transaction_id and lock_status == LockStatus.HOLDING:
+                return self._apply_deadlock_prevention(
+                    requesting_tx=transaction,
+                    holding_tx_id=holder_id,
+                    operation=operation
+                )
         return Response(ResponseType.ALLOWED, operation)
 
-    def end_transaction(self, transaction_id: int):
-        """
-        Implementation
-        """
-        print(f"Ending transaction {transaction_id}.")
-
-        transaction = self.schedule.getTransactionByID(transaction_id)
+    def _handle_write_operation(self, transaction, resource, operation) -> Response:
+        lock_holders = resource.getLockHolderList()
+        transaction_id = transaction.getTransactionID()
         
-        # Release all locks held by the transaction but check if the transaction is still active first or if it has been aborted
-        if transaction.getTransactionStatus() == TransactionStatus.ACTIVE:
-            self.release_locks(transaction)
-            transaction.setTransactionStatus(TransactionStatus.COMMITTED)
+        for holder_id, lock_type, lock_status in lock_holders:
+            if holder_id != transaction_id and lock_status == LockStatus.HOLDING:
+                if lock_type == LockType.X or (lock_type == LockType.S and len(lock_holders) > 1) or (lock_type == LockType.S and holder_id != transaction_id):
+                    return self._apply_deadlock_prevention(
+                        requesting_tx=transaction,
+                        holding_tx_id=holder_id,
+                        operation=operation
+                    )
+        return Response(ResponseType.ALLOWED, operation)
+
+    def log_object(self, operation: Operation):
+        print(f"Logging operation for resource: {operation.getOperationResource()}")
+        
+        transaction = self.schedule.getTransactionByID(operation.getOpTransactionID())
+        resource = self.schedule.get_or_create_resource(operation.getOperationResource())
+        
+        if operation.getOperationType() == OperationType.R:
+            self._grant_shared_lock(transaction, resource)
+        elif operation.getOperationType() == OperationType.W:
+            self._grant_exclusive_lock(transaction, resource)
+        
+        print(f"Lock holders for {resource.getName()}: {resource.getLockHolderList()}")
+        print(f"Waiting Transactions: {self.schedule.getTransactionWaitingList()}")
+
+    def _grant_shared_lock(self, transaction, resource):
+        transaction_id = transaction.getTransactionID()
+        lock_holders = resource.getLockHolderList()
+        
+        for i, (holder_id, lock_type, lock_status) in enumerate(lock_holders):
+            if holder_id == transaction_id:
+                if lock_type == LockType.X:
+                    return
+                elif lock_type == LockType.S:
+                    return
+        
+        lock_holders.append((transaction_id, LockType.S, LockStatus.HOLDING))
+        print(f"Resource {resource.getName()} has shared lock granted on transaction {transaction_id}")
+
+    def _grant_exclusive_lock(self, transaction, resource):
+        transaction_id = transaction.getTransactionID()
+        lock_holders = resource.getLockHolderList()
+        
+        for i, (holder_id, lock_type, lock_status) in enumerate(lock_holders):
+            if holder_id == transaction_id:
+                if lock_type == LockType.X:
+                    return
+                elif lock_type == LockType.S and len(lock_holders) == 1 and transaction_id == holder_id:
+                    lock_holders[i] = (transaction_id, LockType.X, LockStatus.HOLDING)
+                    print(f"Resource {resource.getName()} lock upgraded to exclusive for transaction {transaction_id}")
+                    return
+        
+        lock_holders.append((transaction_id, LockType.X, LockStatus.HOLDING))
+        print(f"Resource {resource.getName()} has exclusive lock granted")
+
+    def release_locks(self, transaction):
+        transaction_id = transaction.getTransactionID()
+        
+        for resource_name in self.schedule.getResourceList():
+            resource = self.schedule.getResourceList().get(resource_name)
+            if resource:
+                lock_holders = resource.getLockHolderList()
+                lock_holders[:] = [(h_id, l_type, l_status) for h_id, l_type, l_status in lock_holders 
+                                 if h_id != transaction_id]
+
+    def _apply_deadlock_prevention(self, requesting_tx, holding_tx_id: int, operation: Operation) -> Response:
+        if self.deadlock_strategy == "WAIT-DIE":
+            return self._wait_die_strategy(requesting_tx, holding_tx_id, operation)
         else:
-            self.abort(transaction_id)
+            return self._wound_wait_strategy(requesting_tx, holding_tx_id, operation)
 
+    def _wait_die_strategy(self, requesting_tx, holding_tx_id: int, operation: Operation) -> Response:
+        if holding_tx_id > requesting_tx.getTransactionID():
+            print(f"Wait-Die: T{requesting_tx.getTransactionID()} (older) waiting for T{holding_tx_id} (younger)")
+            requesting_tx.setTransactionStatus(TransactionStatus.WAITING)
+            self.wait_sequence.append(operation)
+            return Response(ResponseType.WAITING, operation)
+        else:
+            print(f"Wait-Die: T{requesting_tx.getTransactionID()} (younger) aborted")
+            requesting_tx.setTransactionStatus(TransactionStatus.ABORTED)
+            self.release_locks(requesting_tx)
+            self.holder = holding_tx_id
+            return Response(ResponseType.ABORT, operation)
+
+    def _wound_wait_strategy(self, requesting_tx, holding_tx_id: int, operation: Operation) -> Response:
+        if holding_tx_id > requesting_tx.getTransactionID():
+            print(f"Wound-Wait: T{requesting_tx.getTransactionID()} (older) wounding T{holding_tx_id} (younger)")
+            holding_tx = self.schedule.getTransactionByID(holding_tx_id)
+            if holding_tx:
+                holding_tx.setTransactionStatus(TransactionStatus.ABORTED)
+                self.release_locks(holding_tx)
+            return Response(ResponseType.ALLOWED, operation)
+        else:
+            print(f"Wound-Wait: T{requesting_tx.getTransactionID()} (younger) waiting for T{holding_tx_id} (older)")
+            requesting_tx.setTransactionStatus(TransactionStatus.WAITING)
+            self.wait_sequence.append(operation)
+            self.holder = holding_tx_id
+            return Response(ResponseType.WAITING, operation)
+
+    def end_transaction(self, transaction_id: int):
+        print(f"Ending transaction {transaction_id}")
         
-    def shared_lock(self, transaction: int, table: str) -> bool:
-        """Acquire a shared lock."""
-        if table in self.exclusive_lock_table:
-            if self.exclusive_lock_table[table] == transaction:
-                return True  # Already holds an exclusive lock
-            return False
-        if transaction in self.shared_lock_table[table]:
-            return True  # Already holds a shared lock
-        self.shared_lock_table[table].append(transaction)
-        self.log_transaction(transaction, table, "SL", "Success")
-        return True
+        transaction = self.schedule.getTransactionByID(transaction_id)
+        if not transaction:
+            return
 
-    def exclusive_lock(self, transaction: int, table: str) -> bool:
-        """Acquire an exclusive lock."""
-        if table in self.shared_lock_table:
-            if transaction in self.shared_lock_table[table] and len(self.shared_lock_table[table]) == 1:
-                self.shared_lock_table[table].remove(transaction)
-                self.exclusive_lock_table[table] = transaction
-                self.log_transaction(transaction, table, "UPL", "Success")
-                return True
-            return False
-        if table in self.exclusive_lock_table:
-            return self.exclusive_lock_table[table] == transaction
-        self.exclusive_lock_table[table] = transaction
-        self.log_transaction(transaction, table, "XL", "Success")
-        return True
+        if transaction.getTransactionStatus() == TransactionStatus.ABORTED:
+            print(f"Transaction {transaction_id} aborted, adding to waiting list")
+            self.schedule.addWaitingTransaction(transaction, self.holder)
 
-    def release_locks(self, transaction: Transaction):
-        # """Release all locks held by a transaction."""
-        # for resource in transaction.getSharedLockList():
-        #     if resource in self.schedule.getResourceList():
-        #         resource.deleteLockHolder(transaction, S)
-        # for resource in transaction.getExclusiveLockList():
-        #     if resource in self.schedule.getResourceList():
-        #         resource.deleteLockHolder(transaction, X)
-        pass
-        # for table, holder in list(self.exclusive_lock_table.items()):
-        #     if holder == transaction:
-        #         del self.exclusive_lock_table[table]
-        #         self.log_transaction(transaction, table, "UL", "Success")
-        # for table, holders in list(self.shared_lock_table.items()):
-        #     if transaction in holders:
-        #         holders.remove(transaction)
-        #         self.log_transaction(transaction, table, "UL", "Success")
-        #         if not holders:
-        #             del self.shared_lock_table[table]
+        self.schedule.removeTransaction(transaction)
+        self.release_locks(transaction)
+        transaction.setTransactionStatus(TransactionStatus.TERMINATED)
+        print(f"Transaction {transaction_id} removed and terminated")
 
-    def wait_die(self, current: dict):
-        """ IMPLEMENT THE LOGIC IN VALIDATE_OBJECT FUNCTION
-        Deadlock prevention using the wait-die scheme."""
-        # transaction = current["transaction"]
-        # table = current["table"]
-        # if (
-        #     table in self.exclusive_lock_table and
-        #     self.timestamp.index(transaction) < self.timestamp.index(self.exclusive_lock_table[table])
-        # ) or (
-        #     table in self.shared_lock_table and
-        #     all(self.timestamp.index(transaction) < self.timestamp.index(t) for t in self.shared_lock_table[table])
-        # ):
-        #     self.queue.append(current)
-        #     self.log_transaction(transaction, table, current["operation"], "Queue")
-        # else:
-        #     self.abort(current)
-
-    def wound_wait(self, current: dict):
-        """Deadlock prevention using the wound-wait scheme."""
-        
-
-    # def commit(self, transaction_id: int):
-    #     """Commit a transaction and release its locks."""
-        # self.release_locks(transaction)
-        # self.log_transaction(transaction, "-", "Commit", "Success")
-
-    # def abort(self, transaction_id: int):
-    #     """Abort a transaction."""
-        # transaction = current["transaction"]
-        # transaction_id = transaction.getTransactionID
-        # self.schedule.setOperationQueue([op for op in self.schedule.getOperationQueue if op.getOpTransactionID != transaction_id])
-        # self.schedule.setOperationWaitingList([op for op in self.schedule.getOperationWaitingList if op.getOpTransactionID != transaction_id])
-        # self.release_locks(transaction)
-
-    # def abort(self, current: dict):
-    #     """Abort a transaction."""
-    #     transaction = current["transaction"]
-    #     self.sequence = [op for op in self.sequence if op["transaction"] != transaction]
-    #     self.result = [op for op in self.result if op["transaction"] != transaction]
-    #     self.release_locks(transaction)
-    #     self.log_transaction(transaction, current.get("table", "-"), "Abort", "Abort")
+        print(f"Transaction List: {self.schedule.getTransactionList().keys()}")

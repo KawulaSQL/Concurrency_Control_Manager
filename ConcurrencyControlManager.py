@@ -1,5 +1,4 @@
-from models.TwoPhaseLockingv2 import TwoPhaseLockingv2
-from models.TwoPhaseLockingv3 import TwoPhaseLockingv3
+from models.TwoPhaseLocking import TwoPhaseLocking
 from models.TimeStampOrdering import TimestampOrdering
 from models.ControllerMethod import ControllerMethod
 from models.Schedule import Schedule
@@ -21,7 +20,7 @@ class ConcurrencyControlManager:
         if controller == "TSO":
             self.controller = TimestampOrdering()
         else:
-            self.controller = TwoPhaseLockingv3()
+            self.controller = TwoPhaseLocking()
         
         self.schedule = Schedule()
         self.running = True
