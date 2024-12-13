@@ -1,7 +1,5 @@
 # Concurrency-Control-Manager
 
-# Concurrency Control Manager Team Members
-
 | Student ID | Name | Workload |
 |------------|------|----------|
 | 13522036 | Akbar Al Fattah | - All Models<br>- TwoPhaseLocking implementation<br>- Checkpoint and final report document |
