@@ -14,7 +14,7 @@ class Schedule:
             cls._instance = super().__new__(cls)
             cls._instance.resourceList = {}  # Dictionary: {resource_name: Resource object}
             cls._instance.transactionList = {}  # Dictionary: {txID: Transaction object} for fast lookup by txID
-            cls._instance.transactionWaitingList = {}  # Dictionary: {txID: Transaction object} for waiting transactions
+            cls._instance.transactionWaitingList = {}  # Dictionary: {txID: tuple(Transaction object, id_transaction int, TransactionWaitingStatus Enum))} for waiting transactions
         return cls._instance
 
     def __init__(self):
@@ -63,9 +63,9 @@ class Schedule:
         if tx.txID in self.transactionList:
             del self.transactionList[tx.txID]
 
-    def addWaitingTransaction(self, tx: Transaction):
+    def addWaitingTransaction(self, tx: Transaction, id_transaction_blocker: int):
         """Add a transaction to the transactionWaitingList by txID."""
-        self.transactionWaitingList[tx.txID] = tx
+        self.transactionWaitingList[tx.txID] = (tx, id_transaction_blocker)
 
     def removeWaitingTransaction(self, tx: Transaction):
         """Remove a transaction from the transactionWaitingList by txID."""
@@ -78,7 +78,14 @@ class Schedule:
 
     def getWaitingTransaction(self, txID: int):
         """Retrieve a waiting transaction by txID."""
-        return self.transactionWaitingList.get(txID, None)
+        entry = self.transactionWaitingList.get(txID)
+        if entry:
+            return entry[0]  # Return the Transaction object
+        return None
 
-    def addResource(self, res: Resource):
-        self.resourceList[res.name] = res
+    def checkWaitingTransactionBlocker(self, txID: int) -> int:
+        """Retrieve the id_transaction_blocker for a waiting transaction by txID."""
+        entry = self.transactionWaitingList.get(txID)
+        if entry:
+            return entry[1] 
+        return -1 

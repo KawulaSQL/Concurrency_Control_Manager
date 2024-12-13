@@ -59,5 +59,5 @@ class ConcurrencyControlManager:
         """
         self.controller.end_transaction(transaction_id)
 
-    def get_waiting_transactions(self):
+    def getWaitingTransactionsList(self):
         return self.schedule.getTransactionWaitingList

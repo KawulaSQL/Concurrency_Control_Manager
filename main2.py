@@ -89,7 +89,7 @@ def transaction_simulation(cc_manager):
 
         if not is_finished:
             # Retry waiting transactions
-            waiting_transactions = cc_manager.get_waiting_transactions()
+            waiting_transactions = cc_manager.getWaitingTransactionsList()
             print(f"Waiting transactions: {waiting_transactions}")
             for waiting_transaction in waiting_transactions:
                 query_processor.process_transaction(waiting_transaction.transaction_id, waiting_transaction.operations)
